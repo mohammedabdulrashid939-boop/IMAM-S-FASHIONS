@@ -5,6 +5,7 @@ import {
   FashionStyleItem,
   getGeneralWhatsAppUrl,
 } from '../constants/brand.ts';
+import { supabase, isSupabaseConfigured } from '../lib/supabase.ts';
 import { StyleCard } from '../components/StyleCard.tsx';
 import { ImageLightboxModal } from '../components/ImageLightboxModal.tsx';
 
@@ -32,6 +33,30 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
     setLoading(true);
     setError(null);
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error: sbError } = await supabase
+          .from('fashion_styles')
+          .select('*')
+          .eq('category', category)
+          .eq('is_published', true)
+          .order('created_at', { ascending: false });
+
+        if (sbError) throw new Error(sbError.message);
+        const mapped: FashionStyleItem[] = (data || []).map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          imageUrl: row.image_url,
+          storagePath: row.storage_path,
+          isPublished: row.is_published,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        }));
+        setStyles(mapped);
+        return;
+      }
+
       const res = await fetch(`/api/styles?category=${category}`);
       const data = await res.json();
       if (!res.ok) {

@@ -30,6 +30,7 @@ import {
   UserProfileRecord,
   compressAndReadImageFile,
 } from '../constants/brand.ts';
+import { supabase, isSupabaseConfigured } from '../lib/supabase.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 type AdminTab =
@@ -131,6 +132,55 @@ export const AdminDashboardPage: React.FC = () => {
     if (role !== 'admin') return;
     setLoadingData(true);
     try {
+      if (isSupabaseConfigured && supabase) {
+        const [stylesRes, profilesRes, rolesRes] = await Promise.all([
+          supabase.from('fashion_styles').select('*').order('created_at', { ascending: false }),
+          supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: userSortOrder === 'oldest' }),
+          supabase.from('user_roles').select('*'),
+        ]);
+
+        const mappedStyles: FashionStyleItem[] = (stylesRes.data || []).map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          imageUrl: row.image_url,
+          storagePath: row.storage_path,
+          isPublished: row.is_published,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        }));
+
+        const roleMap = new Map<string, 'admin' | 'customer'>();
+        (rolesRes.data || []).forEach((r: any) => {
+          roleMap.set(r.uid, r.role === 'admin' ? 'admin' : 'customer');
+        });
+
+        const mappedUsers: UserProfileRecord[] = (profilesRes.data || []).map((p: any) => ({
+          id: p.id,
+          uid: p.uid,
+          fullName: p.full_name,
+          email: p.email,
+          phoneNumber: p.phone_number || '',
+          accountStatus: p.account_status || 'Active',
+          createdAt: p.created_at,
+          role: roleMap.get(p.uid) || 'customer',
+        }));
+
+        setAllStyles(mappedStyles);
+        setUsersList(mappedUsers);
+        setStats({
+          totalUsers: mappedUsers.length,
+          totalMensStyles: mappedStyles.filter((s) => s.category === 'men').length,
+          totalWomensStyles: mappedStyles.filter((s) => s.category === 'women').length,
+          totalPublishedStyles: mappedStyles.filter((s) => s.isPublished).length,
+        });
+        return;
+      }
+
       const [statsRes, stylesRes, usersRes] = await Promise.all([
         apiFetch('/api/admin/stats'),
         apiFetch('/api/admin/styles'),
@@ -182,6 +232,41 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Helper to upload dataUrl to Supabase Storage bucket 'fashion-styles'
+  const uploadToSupabaseBucket = async (meta: {
+    fileName: string;
+    mimeType: string;
+    dataUrl: string;
+    category: 'men' | 'women';
+  }) => {
+    if (!supabase) throw new Error('Supabase client is not configured.');
+    const safeName = meta.fileName.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
+    const objectPath = `${meta.category}/${Date.now()}-${safeName}`;
+    const res = await fetch(meta.dataUrl);
+    const blob = await res.blob();
+
+    const { error: upErr } = await supabase.storage
+      .from('fashion-styles')
+      .upload(objectPath, blob, {
+        contentType: meta.mimeType,
+        upsert: true,
+      });
+
+    if (upErr) {
+      // Fallback to dataUrl if bucket policy isn't active yet
+      return {
+        storagePath: `fashion-styles/${objectPath}`,
+        imageUrl: meta.dataUrl,
+      };
+    }
+
+    const { data: pubData } = supabase.storage.from('fashion-styles').getPublicUrl(objectPath);
+    return {
+      storagePath: `fashion-styles/${objectPath}`,
+      imageUrl: pubData?.publicUrl || meta.dataUrl,
+    };
+  };
+
   // Publish new fashion style
   const handlePublishStyle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,6 +283,43 @@ export const AdminDashboardPage: React.FC = () => {
     setUploadProgress(25);
 
     try {
+      if (isSupabaseConfigured && supabase) {
+        const uploaded = await uploadToSupabaseBucket({
+          ...uploadFileMeta,
+          category: uploadCategory,
+        });
+        setUploadProgress(70);
+
+        const { data: inserted, error: insErr } = await supabase
+          .from('fashion_styles')
+          .insert({
+            title: uploadTitle.trim(),
+            description: uploadDescription.trim(),
+            category: uploadCategory,
+            image_url: uploaded.imageUrl,
+            storage_path: uploaded.storagePath,
+            is_published: true,
+          })
+          .select()
+          .single();
+
+        if (insErr) throw new Error(insErr.message);
+
+        setUploadProgress(100);
+        setUploadTitle('');
+        setUploadDescription('');
+        setUploadPreview(null);
+        setUploadFileMeta(null);
+        await loadDashboardData();
+
+        const catLabel = uploadCategory === 'men' ? "Men's Fashion" : "Women's Fashion";
+        setGlobalBanner({
+          type: 'success',
+          message: `"${inserted.title}" has been uploaded to the fashion-styles bucket and published live on the ${catLabel} page.`,
+        });
+        return;
+      }
+
       // Step 1: Upload to 'fashion-styles' bucket
       const uploadRes = await apiFetch('/api/admin/storage/upload', {
         method: 'POST',
@@ -290,6 +412,40 @@ export const AdminDashboardPage: React.FC = () => {
       let imageUrl = editingStyle.imageUrl;
       let storagePath = editingStyle.storagePath;
 
+      if (isSupabaseConfigured && supabase) {
+        if (editNewImageMeta) {
+          const uploaded = await uploadToSupabaseBucket({
+            ...editNewImageMeta,
+            category: editCategory,
+          });
+          imageUrl = uploaded.imageUrl;
+          storagePath = uploaded.storagePath;
+        }
+
+        const { error: upErr } = await supabase
+          .from('fashion_styles')
+          .update({
+            title: editTitle.trim(),
+            description: editDescription.trim(),
+            category: editCategory,
+            image_url: imageUrl,
+            storage_path: storagePath,
+            is_published: editIsPublished,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingStyle.id);
+
+        if (upErr) throw new Error(upErr.message);
+
+        setEditingStyle(null);
+        await loadDashboardData();
+        setGlobalBanner({
+          type: 'success',
+          message: `Updated "${editTitle.trim()}" successfully.`,
+        });
+        return;
+      }
+
       if (editNewImageMeta) {
         const uploadRes = await apiFetch('/api/admin/storage/upload', {
           method: 'POST',
@@ -343,6 +499,23 @@ export const AdminDashboardPage: React.FC = () => {
   const handleTogglePublish = async (style: FashionStyleItem) => {
     setGlobalBanner(null);
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { error: upErr } = await supabase
+          .from('fashion_styles')
+          .update({
+            is_published: !style.isPublished,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', style.id);
+        if (upErr) throw new Error(upErr.message);
+        await loadDashboardData();
+        setGlobalBanner({
+          type: 'success',
+          message: `"${style.title}" is now ${!style.isPublished ? 'Published' : 'Unpublished'}.`,
+        });
+        return;
+      }
+
       const res = await apiFetch(`/api/admin/styles/${style.id}`, {
         method: 'PUT',
         body: JSON.stringify({
@@ -371,6 +544,27 @@ export const AdminDashboardPage: React.FC = () => {
     setConfirmingDelete(true);
     setGlobalBanner(null);
     try {
+      if (isSupabaseConfigured && supabase) {
+        if (deletingStyle.storagePath) {
+          const relPath = deletingStyle.storagePath.replace(/^fashion-styles\//, '');
+          await supabase.storage.from('fashion-styles').remove([relPath]);
+        }
+        const { error: delErr } = await supabase
+          .from('fashion_styles')
+          .delete()
+          .eq('id', deletingStyle.id);
+        if (delErr) throw new Error(delErr.message);
+
+        const deletedTitle = deletingStyle.title;
+        setDeletingStyle(null);
+        await loadDashboardData();
+        setGlobalBanner({
+          type: 'success',
+          message: `"${deletedTitle}" and its storage file have been permanently removed.`,
+        });
+        return;
+      }
+
       const res = await apiFetch(`/api/admin/styles/${deletingStyle.id}`, {
         method: 'DELETE',
       });
@@ -400,6 +594,23 @@ export const AdminDashboardPage: React.FC = () => {
     setGlobalBanner(null);
     const nextStatus = userRecord.accountStatus === 'Active' ? 'Suspended' : 'Active';
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { error: upErr } = await supabase
+          .from('profiles')
+          .update({ account_status: nextStatus })
+          .eq('uid', userRecord.uid);
+        if (upErr) throw new Error(upErr.message);
+        if (selectedUserModal && selectedUserModal.uid === userRecord.uid) {
+          setSelectedUserModal({ ...selectedUserModal, accountStatus: nextStatus });
+        }
+        await loadDashboardData();
+        setGlobalBanner({
+          type: 'success',
+          message: `Updated ${userRecord.fullName}'s account status to ${nextStatus}.`,
+        });
+        return;
+      }
+
       const res = await apiFetch(`/api/admin/users/${userRecord.uid}`, {
         method: 'PUT',
         body: JSON.stringify({ accountStatus: nextStatus }),
