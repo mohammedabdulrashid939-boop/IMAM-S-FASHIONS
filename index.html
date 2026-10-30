@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function () {
+        // Prevent Vite HMR WebSocket errors in Cloud Run proxy environment
+        var NativeWebSocket = window.WebSocket;
+        if (NativeWebSocket) {
+          function PatchedWebSocket(url, protocols) {
+            var isViteHmr =
+              protocols === 'vite-hmr' ||
+              (Array.isArray(protocols) && protocols.indexOf('vite-hmr') !== -1) ||
+              (typeof url === 'string' && url.indexOf('vite-hmr') !== -1);
+
+            if (isViteHmr) {
+              var dummy = {
+                url: url,
+                readyState: 1,
+                protocol: 'vite-hmr',
+                extensions: '',
+                bufferedAmount: 0,
+                binaryType: 'blob',
+                 CONNECTING: 0,
+                OPEN: 1,
+                CLOSING: 2,
+                CLOSED: 3,
+                send: function () {},
+                close: function () {},
+                addEventListener: function () {},
+                removeEventListener: function () {},
+                dispatchEvent: function () {
+                  return true;
+                },
+                onopen: null,
+                onmessage: null,
+                onerror: null,
+                onclose: null,
+              };
+              return dummy;
+            }
+            return protocols !== undefined
+              ? new NativeWebSocket(url, protocols)
+              : new NativeWebSocket(url);
+          }
+          PatchedWebSocket.prototype = NativeWebSocket.prototype;
+          PatchedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+          PatchedWebSocket.OPEN = NativeWebSocket.OPEN;
+          PatchedWebSocket.CLOSING = NativeWebSocket.CLOSING;
+          PatchedWebSocket.CLOSED = NativeWebSocket.CLOSED;
+          window.WebSocket = PatchedWebSocket;
+        }
+
+        window.addEventListener('unhandledrejection', function (event) {
+          if (
+            event &&
+            event.reason &&
+            typeof event.reason.message === 'string' &&
+            event.reason.message.indexOf('WebSocket') !== -1
+          ) {
+            event.preventDefault();
+          }
+        });
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Imam's Fashion | Style For Every Occasion — Accra, Ghana</title>
+    <meta
+      name="description"
+      content="Explore elegant men's and women's fashion designs crafted with creativity, passion, and attention to detail at Imam's Fashion, Accra Zongo Lane, Ghana."
+    />
+    <meta property="og:title" content="Imam's Fashion | Style For Every Occasion" />
+    <meta
+      property="og:description"
+      content="Premium bespoke men's and women's African fashion tailoring in Accra, Ghana. Founded by Mohammed Abdul Rashid."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/aistudio/Imam_s_Fashion_Crest_Logo_74895f44.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="/assets/aistudio/Imam_s_Fashion_Crest_Logo_74895f44.png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-white text-[#071B49] antialiased selection:bg-[#39D353]/20 selection:text-[#071B49]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

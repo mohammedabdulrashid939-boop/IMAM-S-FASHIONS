@@ -1,0 +1,6 @@
+{
+  "name": "Imam's Fashion",
+  "description": "Premium bespoke African fashion tailoring house in Accra, Ghana. Explore elegant men's and women's fashion styles crafted by Mohammed Abdul Rashid.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
