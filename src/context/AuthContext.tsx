@@ -57,6 +57,14 @@ async function syncSupabaseUserSession(
     existingRole?.role === 'admin' || isFounder ? 'admin' : 'customer';
 
   if (existingProfile) {
+    if (isFounder && existingRole?.role !== 'admin') {
+      await supabase
+        .from('user_roles')
+        .upsert(
+          { user_id: existingProfile.user_id, uid: userId, role: 'admin' },
+          { onConflict: 'uid' }
+        );
+    }
     return {
       profile: {
         id: existingProfile.id,
@@ -72,11 +80,78 @@ async function syncSupabaseUserSession(
     };
   }
 
+  // Ensure user, profile, and role rows exist in Supabase tables
+  const displayName = fallbackName.trim() || cleanEmail.split('@')[0];
+  try {
+    const { data: upsertedUser } = await supabase
+      .from('users')
+      .upsert(
+        {
+          uid: userId,
+          email: cleanEmail,
+          fullName: undefined,
+          full_name: displayName,
+          phone_number: fallbackPhone,
+          account_status: 'Active',
+        },
+        { onConflict: 'uid' }
+      )
+      .select()
+      .maybeSingle();
+
+    const numericUserId = upsertedUser?.id || null;
+
+    const { data: upsertedProfile } = await supabase
+      .from('profiles')
+      .upsert(
+        {
+          user_id: numericUserId,
+          uid: userId,
+          full_name: displayName,
+          email: cleanEmail,
+          phone_number: fallbackPhone,
+          account_status: 'Active',
+        },
+        { onConflict: 'uid' }
+      )
+      .select()
+      .maybeSingle();
+
+    await supabase
+      .from('user_roles')
+      .upsert(
+        {
+          user_id: numericUserId,
+          uid: userId,
+          role: resolvedRole,
+        },
+        { onConflict: 'uid' }
+      );
+
+    if (upsertedProfile) {
+      return {
+        profile: {
+          id: upsertedProfile.id,
+          uid: upsertedProfile.uid,
+          fullName: upsertedProfile.full_name,
+          email: upsertedProfile.email,
+          phoneNumber: upsertedProfile.phone_number || '',
+          accountStatus: upsertedProfile.account_status || 'Active',
+          createdAt: upsertedProfile.created_at,
+          role: resolvedRole,
+        },
+        role: resolvedRole,
+      };
+    }
+  } catch {
+    // Fallback if RLS isn't updated yet
+  }
+
   return {
     profile: {
       id: 0,
       uid: userId,
-      fullName: fallbackName || cleanEmail.split('@')[0],
+      fullName: displayName,
       email: cleanEmail,
       phoneNumber: fallbackPhone,
       accountStatus: 'Active',

@@ -232,6 +232,20 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Helper to convert base64 dataUrl to Blob in memory without calling fetch()
+  const dataUrlToBlob = (dataUrl: string, fallbackMime: string): Blob => {
+    const parts = dataUrl.split(',');
+    const byteString = atob(parts[1] || '');
+    const mimeMatch = parts[0]?.match(/:(.*?);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : fallbackMime;
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeType });
+  };
+
   // Helper to upload dataUrl to Supabase Storage bucket 'fashion-styles'
   const uploadToSupabaseBucket = async (meta: {
     fileName: string;
@@ -241,29 +255,35 @@ export const AdminDashboardPage: React.FC = () => {
   }) => {
     if (!supabase) throw new Error('Supabase client is not configured.');
     const safeName = meta.fileName.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
-    const objectPath = `${meta.category}/${Date.now()}-${safeName}`;
-    const res = await fetch(meta.dataUrl);
-    const blob = await res.blob();
+    const objectPath = `${meta.category}-${Date.now()}-${safeName}`;
 
-    const { error: upErr } = await supabase.storage
-      .from('fashion-styles')
-      .upload(objectPath, blob, {
-        contentType: meta.mimeType,
-        upsert: true,
-      });
+    try {
+      const blob = dataUrlToBlob(meta.dataUrl, meta.mimeType);
+      const { error: upErr } = await supabase.storage
+        .from('fashion-styles')
+        .upload(objectPath, blob, {
+          contentType: meta.mimeType,
+          upsert: true,
+        });
 
-    if (upErr) {
-      // Fallback to dataUrl if bucket policy isn't active yet
-      return {
-        storagePath: `fashion-styles/${objectPath}`,
-        imageUrl: meta.dataUrl,
-      };
+      if (!upErr) {
+        const { data: pubData } = supabase.storage
+          .from('fashion-styles')
+          .getPublicUrl(objectPath);
+        if (pubData?.publicUrl) {
+          return {
+            storagePath: `fashion-styles/${objectPath}`,
+            imageUrl: pubData.publicUrl,
+          };
+        }
+      }
+    } catch {
+      // Fallback to embedded compressed dataUrl if storage upload is unavailable
     }
 
-    const { data: pubData } = supabase.storage.from('fashion-styles').getPublicUrl(objectPath);
     return {
       storagePath: `fashion-styles/${objectPath}`,
-      imageUrl: pubData?.publicUrl || meta.dataUrl,
+      imageUrl: meta.dataUrl,
     };
   };
 
