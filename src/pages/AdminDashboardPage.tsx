@@ -259,26 +259,14 @@ export const AdminDashboardPage: React.FC = () => {
 
     try {
       const blob = dataUrlToBlob(meta.dataUrl, meta.mimeType);
-      const { error: upErr } = await supabase.storage
+      await supabase.storage
         .from('fashion-styles')
         .upload(objectPath, blob, {
           contentType: meta.mimeType,
           upsert: true,
         });
-
-      if (!upErr) {
-        const { data: pubData } = supabase.storage
-          .from('fashion-styles')
-          .getPublicUrl(objectPath);
-        if (pubData?.publicUrl) {
-          return {
-            storagePath: `fashion-styles/${objectPath}`,
-            imageUrl: pubData.publicUrl,
-          };
-        }
-      }
     } catch {
-      // Fallback to embedded compressed dataUrl if storage upload is unavailable
+      // Ignore storage bucket upload error and use compressed dataUrl
     }
 
     return {
