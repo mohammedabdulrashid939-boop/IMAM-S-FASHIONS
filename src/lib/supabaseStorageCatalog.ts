@@ -5,8 +5,7 @@ const CATALOG_BUCKET = 'fashion-styles';
 const CATALOG_FILE = '_catalog_styles.json';
 export const STYLE_UID_PREFIX = 'fashion_style__';
 
-export const SUPABASE_QUICK_FIX_SQL = `-- Create fashion_styles table and unlock permissions
-CREATE TABLE IF NOT EXISTS public.fashion_styles (
+export const SUPABASE_QUICK_FIX_SQL = `CREATE TABLE IF NOT EXISTS public.fashion_styles (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -18,10 +17,20 @@ CREATE TABLE IF NOT EXISTS public.fashion_styles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE public.fashion_styles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fashion_styles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public full access to fashion_styles" ON public.fashion_styles;
+CREATE POLICY "Public full access to fashion_styles"
+  ON public.fashion_styles
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
+
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+
 COMMENT ON TABLE public.fashion_styles IS 'IMAM FASHION STYLES CATALOG';
 NOTIFY pgrst, 'reload schema';`;
 
