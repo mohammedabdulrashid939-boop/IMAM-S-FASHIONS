@@ -6,6 +6,7 @@ import {
   getGeneralWhatsAppUrl,
 } from '../constants/brand.ts';
 import { supabase, isSupabaseConfigured } from '../lib/supabase.ts';
+import { loadCatalogFromSupabaseStorage } from '../lib/supabaseStorageCatalog.ts';
 import { StyleCard } from '../components/StyleCard.tsx';
 import { ImageLightboxModal } from '../components/ImageLightboxModal.tsx';
 
@@ -41,7 +42,7 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
           .eq('is_published', true)
           .order('created_at', { ascending: false });
 
-        if (!sbError && data) {
+        if (!sbError && data && data.length > 0) {
           const mapped: FashionStyleItem[] = data.map((row: any) => ({
             id: row.id,
             title: row.title,
@@ -54,6 +55,21 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
             updatedAt: row.updated_at,
           }));
           setStyles(mapped);
+          return;
+        }
+
+        // Check Supabase Storage catalog fallback if table is empty or not in schema cache
+        const storageCatalog = await loadCatalogFromSupabaseStorage();
+        const filteredStorage = storageCatalog.filter(
+          (item) => item.category === category && item.isPublished
+        );
+        if (filteredStorage.length > 0) {
+          setStyles(filteredStorage);
+          return;
+        }
+
+        if (!sbError && data) {
+          setStyles([]);
           return;
         }
 

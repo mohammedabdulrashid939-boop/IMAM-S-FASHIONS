@@ -30,8 +30,16 @@ import {
   UserProfileRecord,
   compressAndReadImageFile,
 } from '../constants/brand.ts';
-import { supabase, isSupabaseConfigured } from '../lib/supabase.ts';
+import { supabase, isSupabaseConfigured, activeSupabaseUrl } from '../lib/supabase.ts';
+import {
+  loadCatalogFromSupabaseStorage,
+  appendStyleToSupabaseStorageCatalog,
+  updateStyleInSupabaseStorageCatalog,
+  deleteStyleFromSupabaseStorageCatalog,
+  SUPABASE_QUICK_FIX_SQL,
+} from '../lib/supabaseStorageCatalog.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+
 
 type AdminTab =
   | 'overview'
@@ -142,7 +150,7 @@ export const AdminDashboardPage: React.FC = () => {
           supabase.from('user_roles').select('*'),
         ]);
 
-        const mappedStyles: FashionStyleItem[] = (stylesRes.data || []).map((row: any) => ({
+        let mappedStyles: FashionStyleItem[] = (stylesRes.data || []).map((row: any) => ({
           id: row.id,
           title: row.title,
           description: row.description,
@@ -153,6 +161,13 @@ export const AdminDashboardPage: React.FC = () => {
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         }));
+
+        if (mappedStyles.length === 0) {
+          const fallbackCatalog = await loadCatalogFromSupabaseStorage();
+          if (fallbackCatalog.length > 0) {
+            mappedStyles = fallbackCatalog;
+          }
+        }
 
         const roleMap = new Map<string, 'admin' | 'customer'>();
         (rolesRes.data || []).forEach((r: any) => {
@@ -298,6 +313,16 @@ export const AdminDashboardPage: React.FC = () => {
         });
         setUploadProgress(70);
 
+        // Also sync to Supabase Storage catalog manifest so styles work even if PostgREST schema cache is stale
+        const storageCatalogEntry = await appendStyleToSupabaseStorageCatalog({
+          title: uploadTitle.trim(),
+          description: uploadDescription.trim(),
+          category: uploadCategory,
+          imageUrl: uploaded.imageUrl,
+          storagePath: uploaded.storagePath,
+          isPublished: true,
+        });
+
         const { data: inserted, error: insErr } = await supabase
           .from('fashion_styles')
           .insert({
@@ -311,8 +336,11 @@ export const AdminDashboardPage: React.FC = () => {
           .select()
           .single();
 
-        if (insErr) throw new Error(insErr.message);
+        if (insErr && !storageCatalogEntry) {
+          throw new Error(insErr.message);
+        }
 
+        const publishedTitle = inserted?.title || storageCatalogEntry?.title || uploadTitle.trim();
         setUploadProgress(100);
         setUploadTitle('');
         setUploadDescription('');
@@ -323,7 +351,7 @@ export const AdminDashboardPage: React.FC = () => {
         const catLabel = uploadCategory === 'men' ? "Men's Fashion" : "Women's Fashion";
         setGlobalBanner({
           type: 'success',
-          message: `"${inserted.title}" has been uploaded to the fashion-styles bucket and published live on the ${catLabel} page.`,
+          message: `"${publishedTitle}" has been uploaded to the fashion-styles bucket and published live on the ${catLabel} page.`,
         });
         return;
       }
@@ -430,6 +458,15 @@ export const AdminDashboardPage: React.FC = () => {
           storagePath = uploaded.storagePath;
         }
 
+        const storageUpdated = await updateStyleInSupabaseStorageCatalog(editingStyle.id, {
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          category: editCategory,
+          imageUrl,
+          storagePath,
+          isPublished: editIsPublished,
+        });
+
         const { error: upErr } = await supabase
           .from('fashion_styles')
           .update({
@@ -443,7 +480,7 @@ export const AdminDashboardPage: React.FC = () => {
           })
           .eq('id', editingStyle.id);
 
-        if (upErr) throw new Error(upErr.message);
+        if (upErr && !storageUpdated) throw new Error(upErr.message);
 
         setEditingStyle(null);
         await loadDashboardData();
@@ -508,6 +545,9 @@ export const AdminDashboardPage: React.FC = () => {
     setGlobalBanner(null);
     try {
       if (isSupabaseConfigured && supabase) {
+        const storageUpdated = await updateStyleInSupabaseStorageCatalog(style.id, {
+          isPublished: !style.isPublished,
+        });
         const { error: upErr } = await supabase
           .from('fashion_styles')
           .update({
@@ -515,7 +555,7 @@ export const AdminDashboardPage: React.FC = () => {
             updated_at: new Date().toISOString(),
           })
           .eq('id', style.id);
-        if (upErr) throw new Error(upErr.message);
+        if (upErr && !storageUpdated) throw new Error(upErr.message);
         await loadDashboardData();
         setGlobalBanner({
           type: 'success',
@@ -557,11 +597,12 @@ export const AdminDashboardPage: React.FC = () => {
           const relPath = deletingStyle.storagePath.replace(/^fashion-styles\//, '');
           await supabase.storage.from('fashion-styles').remove([relPath]);
         }
+        const storageDeleted = await deleteStyleFromSupabaseStorageCatalog(deletingStyle.id);
         const { error: delErr } = await supabase
           .from('fashion_styles')
           .delete()
           .eq('id', deletingStyle.id);
-        if (delErr) throw new Error(delErr.message);
+        if (delErr && !storageDeleted) throw new Error(delErr.message);
 
         const deletedTitle = deletingStyle.title;
         setDeletingStyle(null);
@@ -857,27 +898,57 @@ export const AdminDashboardPage: React.FC = () => {
         {/* Status Notification Banner */}
         {globalBanner && (
           <div
-            className={`p-4 rounded-2xl border flex items-start justify-between gap-3 ${
+            className={`p-4 rounded-2xl border flex flex-col gap-3 ${
               globalBanner.type === 'success'
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                 : 'bg-red-50 border-red-200 text-red-800'
             }`}
           >
-            <div className="flex items-center gap-2.5 text-sm font-medium">
-              {globalBanner.type === 'success' ? (
-                <CheckCircle2 className="w-5 h-5 text-[#39D353] shrink-0" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-              )}
-              <span>{globalBanner.message}</span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-sm font-medium">
+                {globalBanner.type === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 text-[#39D353] shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                )}
+                <span>{globalBanner.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGlobalBanner(null)}
+                className="text-xs underline opacity-75 hover:opacity-100 shrink-0"
+              >
+                Dismiss
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setGlobalBanner(null)}
-              className="text-xs underline opacity-75 hover:opacity-100"
-            >
-              Dismiss
-            </button>
+
+            {globalBanner.type === 'error' &&
+              (globalBanner.message.includes('schema cache') ||
+                globalBanner.message.includes('row-level security') ||
+                globalBanner.message.includes('does not exist')) && (
+                <div className="pt-2 border-t border-red-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-red-900">
+                  <div>
+                    <p className="font-semibold">
+                      Your Supabase project ({activeSupabaseUrl || 'configured in environment variables'}) needs the{' '}
+                      <code className="bg-white/80 px-1.5 py-0.5 rounded">public.fashion_styles</code> table created &amp; unlocked.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(SUPABASE_QUICK_FIX_SQL);
+                      setGlobalBanner({
+                        type: 'success',
+                        message:
+                          'Copied Complete Supabase SQL! Paste it into your Supabase SQL Editor and click Run.',
+                      });
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#071B49] text-white font-semibold hover:bg-[#0b2768] transition-colors shrink-0 cursor-pointer"
+                  >
+                    Copy Complete Supabase SQL
+                  </button>
+                </div>
+              )}
           </div>
         )}
 

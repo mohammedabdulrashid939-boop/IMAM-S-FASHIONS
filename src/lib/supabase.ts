@@ -37,6 +37,8 @@ const supabaseAnonKey = (
   import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 )?.trim();
 
+export const activeSupabaseUrl = supabaseUrl || '';
+
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
     supabaseAnonKey &&
@@ -47,3 +49,4 @@ export const isSupabaseConfigured = Boolean(
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!)
   : null;
+
