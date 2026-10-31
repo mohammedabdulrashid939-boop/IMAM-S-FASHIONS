@@ -140,13 +140,9 @@ export const Footer: React.FC = () => {
           <p>
             &copy; {currentYear} {BUSINESS_NAME}. All rights reserved. Currency: Ghana Cedis (GH₵).
           </p>
-          <Link
-            to="/admin/login"
-            title="Administrator Portal"
-            className="font-display text-base italic tracking-wide text-white/95 hover:text-[#39D353] transition-colors"
-          >
+          <p className="font-display text-base italic tracking-wide text-white/95">
             Founded by {FOUNDER_NAME}
-          </Link>
+          </p>
         </div>
       </div>
     </footer>

@@ -300,21 +300,13 @@ export const CustomerLoginPage: React.FC = () => {
           <span>Continue with Google</span>
         </button>
 
-        <div className="text-center text-xs text-slate-600 pt-2 space-y-3">
+        <div className="text-center text-xs text-slate-600 pt-2">
           <p>
             Don&apos;t have an account yet?{' '}
             <Link to="/register" className="font-semibold text-[#071B49] hover:text-[#39D353]">
               Create a Customer Account
             </Link>
           </p>
-          <div className="pt-3 border-t border-slate-100">
-            <Link
-              to="/admin/login"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#071B49] hover:text-[#39D353] transition-colors"
-            >
-              <span>Administrator Portal Login (Admin &amp; Users Dashboard) &rarr;</span>
-            </Link>
-          </div>
         </div>
       </div>
     </div>
