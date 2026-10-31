@@ -41,23 +41,55 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
           .eq('is_published', true)
           .order('created_at', { ascending: false });
 
-        if (sbError) throw new Error(sbError.message);
-        const mapped: FashionStyleItem[] = (data || []).map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          description: row.description,
-          category: row.category,
-          imageUrl: row.image_url,
-          storagePath: row.storage_path,
-          isPublished: row.is_published,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        }));
-        setStyles(mapped);
-        return;
+        if (!sbError && data) {
+          const mapped: FashionStyleItem[] = data.map((row: any) => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            category: row.category,
+            imageUrl: row.image_url,
+            storagePath: row.storage_path,
+            isPublished: row.is_published,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }));
+          setStyles(mapped);
+          return;
+        }
+
+        // If Supabase table is not yet in PostgREST schema cache, try API fallback or show empty state cleanly
+        if (
+          sbError &&
+          (sbError.message.includes('schema cache') ||
+            sbError.message.includes('does not exist') ||
+            sbError.code === 'PGRST205' ||
+            sbError.code === '42P01')
+        ) {
+          try {
+            const fallbackRes = await fetch(`/api/styles?category=${category}`);
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              setStyles(Array.isArray(fallbackData.styles) ? fallbackData.styles : []);
+              return;
+            }
+          } catch {
+            // Static host without /api/styles
+          }
+          setStyles([]);
+          return;
+        }
+
+        if (sbError) {
+          throw new Error(sbError.message);
+        }
       }
 
       const res = await fetch(`/api/styles?category=${category}`);
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        setStyles([]);
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to load styles.');

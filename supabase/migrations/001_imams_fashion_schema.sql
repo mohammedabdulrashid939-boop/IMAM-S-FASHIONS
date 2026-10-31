@@ -1,12 +1,10 @@
 -- ============================================================================
--- IMAM'S FASHION — COMPLETE SUPABASE SQL SETUP SCRIPT
+-- IMAM'S FASHION — COMPLETE SUPABASE SQL SETUP & SCHEMA CACHE RELOAD
 -- Business: Imam's Fashion (Accra Zongo Lane, opposite K-F-M, Ghana)
 -- Founder: Mohammed Abdul Rashid
--- Instructions: Copy and paste this entire script into the Supabase SQL Editor
--- and click "Run".
 -- ============================================================================
 
--- 1. CREATE TABLES
+-- 1. CREATE TABLES IN PUBLIC SCHEMA
 CREATE TABLE IF NOT EXISTS public.users (
   id SERIAL PRIMARY KEY,
   uid TEXT NOT NULL UNIQUE,
@@ -15,26 +13,26 @@ CREATE TABLE IF NOT EXISTS public.users (
   phone_number TEXT DEFAULT '',
   password_hash TEXT,
   account_status TEXT NOT NULL DEFAULT 'Active',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
   uid TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone_number TEXT NOT NULL DEFAULT '',
   account_status TEXT NOT NULL DEFAULT 'Active',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
   uid TEXT NOT NULL UNIQUE,
   role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS public.fashion_styles (
@@ -45,11 +43,18 @@ CREATE TABLE IF NOT EXISTS public.fashion_styles (
   image_url TEXT NOT NULL,
   storage_path TEXT NOT NULL,
   is_published BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 2. HELPER FUNCTION TO VERIFY ADMIN ROLE
+-- 2. GRANT PERMISSIONS TO SUPABASE API ROLES (REQUIRED FOR SCHEMA CACHE)
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
+-- 3. HELPER FUNCTION TO VERIFY ADMIN ROLE
 CREATE OR REPLACE FUNCTION public.is_admin_uid(check_uid TEXT)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -62,7 +67,7 @@ AS $$
   );
 $$;
 
--- 3. AUTOMATIC TRIGGER FOR SUPABASE AUTH.USERS
+-- 4. AUTOMATIC TRIGGER FOR SUPABASE AUTH.USERS
 CREATE OR REPLACE FUNCTION public.handle_new_supabase_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -113,13 +118,13 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_supabase_user();
 
--- 4. ENABLE ROW LEVEL SECURITY (RLS)
+-- 5. ENABLE ROW LEVEL SECURITY (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fashion_styles ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS POLICIES FOR FASHION_STYLES
+-- 6. RLS POLICIES FOR FASHION_STYLES
 DROP POLICY IF EXISTS "Public visitors can read published fashion styles" ON public.fashion_styles;
 CREATE POLICY "Public visitors can read published fashion styles"
   ON public.fashion_styles
@@ -148,13 +153,20 @@ CREATE POLICY "Admins can delete fashion styles"
   TO authenticated
   USING (public.is_admin_uid(auth.uid()::text));
 
--- 6. RLS POLICIES FOR PROFILES & USERS
+-- 7. RLS POLICIES FOR PROFILES & USERS
 DROP POLICY IF EXISTS "Users view own profile or admins view all" ON public.profiles;
 CREATE POLICY "Users view own profile or admins view all"
   ON public.profiles
   FOR SELECT
   TO authenticated
   USING (uid = auth.uid()::text OR public.is_admin_uid(auth.uid()::text));
+
+DROP POLICY IF EXISTS "Users insert own profile" ON public.profiles;
+CREATE POLICY "Users insert own profile"
+  ON public.profiles
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (uid = auth.uid()::text OR public.is_admin_uid(auth.uid()::text));
 
 DROP POLICY IF EXISTS "Users update own profile or admins update all" ON public.profiles;
 CREATE POLICY "Users update own profile or admins update all"
@@ -170,7 +182,7 @@ CREATE POLICY "Users view own user record or admins view all"
   TO authenticated
   USING (uid = auth.uid()::text OR public.is_admin_uid(auth.uid()::text));
 
--- 7. RLS POLICIES FOR USER_ROLES
+-- 8. RLS POLICIES FOR USER_ROLES
 DROP POLICY IF EXISTS "Users view own role or admins view all" ON public.user_roles;
 CREATE POLICY "Users view own role or admins view all"
   ON public.user_roles
@@ -186,7 +198,7 @@ CREATE POLICY "Only admins can manage roles"
   USING (public.is_admin_uid(auth.uid()::text))
   WITH CHECK (public.is_admin_uid(auth.uid()::text));
 
--- 8. CREATE STORAGE BUCKET: 'fashion-styles'
+-- 9. CREATE STORAGE BUCKET: 'fashion-styles'
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('fashion-styles', 'fashion-styles', TRUE)
 ON CONFLICT (id) DO NOTHING;
@@ -217,3 +229,6 @@ CREATE POLICY "Admins can delete from fashion-styles bucket"
   FOR DELETE
   TO authenticated
   USING (bucket_id = 'fashion-styles' AND public.is_admin_uid(auth.uid()::text));
+
+-- 10. FORCE SUPABASE POSTGREST API TO RELOAD SCHEMA CACHE IMMEDIATELY
+NOTIFY pgrst, 'reload schema';
