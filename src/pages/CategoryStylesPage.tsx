@@ -35,43 +35,44 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
     setError(null);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { data, error: sbError } = await supabase
-          .from('fashion_styles')
-          .select('*')
-          .eq('category', category)
-          .eq('is_published', true)
-          .order('created_at', { ascending: false });
+        const [{ data, error: sbError }, storageCatalog] = await Promise.all([
+          supabase
+            .from('fashion_styles')
+            .select('*')
+            .eq('category', category)
+            .eq('is_published', true)
+            .order('created_at', { ascending: false }),
+          loadCatalogFromSupabaseStorage(),
+        ]);
 
-        if (!sbError && data && data.length > 0) {
-          const mapped: FashionStyleItem[] = data.map((row: any) => ({
-            id: row.id,
-            title: row.title,
-            description: row.description,
-            category: row.category,
-            imageUrl: row.image_url,
-            storagePath: row.storage_path,
-            isPublished: row.is_published,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-          }));
+        const mapped: FashionStyleItem[] = (data || []).map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          imageUrl: row.image_url,
+          storagePath: row.storage_path,
+          isPublished: row.is_published,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        }));
+
+        const filteredFallback = storageCatalog.filter(
+          (item) => item.category === category && item.isPublished
+        );
+
+        const existingKeys = new Set(mapped.map((s) => `${s.title}-${s.createdAt}`));
+        for (const item of filteredFallback) {
+          if (!existingKeys.has(`${item.title}-${item.createdAt}`)) {
+            mapped.push(item);
+          }
+        }
+
+        if (mapped.length > 0 || !sbError) {
           setStyles(mapped);
           return;
         }
 
-        // Check Supabase Storage catalog fallback if table is empty or not in schema cache
-        const storageCatalog = await loadCatalogFromSupabaseStorage();
-        const filteredStorage = storageCatalog.filter(
-          (item) => item.category === category && item.isPublished
-        );
-        if (filteredStorage.length > 0) {
-          setStyles(filteredStorage);
-          return;
-        }
-
-        if (!sbError && data) {
-          setStyles([]);
-          return;
-        }
 
         // If Supabase table is not yet in PostgREST schema cache, try API fallback or show empty state cleanly
         if (

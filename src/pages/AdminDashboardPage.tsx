@@ -37,6 +37,7 @@ import {
   updateStyleInSupabaseStorageCatalog,
   deleteStyleFromSupabaseStorageCatalog,
   SUPABASE_QUICK_FIX_SQL,
+  STYLE_UID_PREFIX,
 } from '../lib/supabaseStorageCatalog.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
@@ -162,10 +163,13 @@ export const AdminDashboardPage: React.FC = () => {
           updatedAt: row.updated_at,
         }));
 
-        if (mappedStyles.length === 0) {
-          const fallbackCatalog = await loadCatalogFromSupabaseStorage();
-          if (fallbackCatalog.length > 0) {
-            mappedStyles = fallbackCatalog;
+        const fallbackCatalog = await loadCatalogFromSupabaseStorage();
+        if (fallbackCatalog.length > 0) {
+          const existingIds = new Set(mappedStyles.map((s) => `${s.title}-${s.createdAt}`));
+          for (const item of fallbackCatalog) {
+            if (!existingIds.has(`${item.title}-${item.createdAt}`)) {
+              mappedStyles.push(item);
+            }
           }
         }
 
@@ -174,16 +178,18 @@ export const AdminDashboardPage: React.FC = () => {
           roleMap.set(r.uid, r.role === 'admin' ? 'admin' : 'customer');
         });
 
-        const mappedUsers: UserProfileRecord[] = (profilesRes.data || []).map((p: any) => ({
-          id: p.id,
-          uid: p.uid,
-          fullName: p.full_name,
-          email: p.email,
-          phoneNumber: p.phone_number || '',
-          accountStatus: p.account_status || 'Active',
-          createdAt: p.created_at,
-          role: roleMap.get(p.uid) || 'customer',
-        }));
+        const mappedUsers: UserProfileRecord[] = (profilesRes.data || [])
+          .filter((p: any) => !String(p.uid || '').startsWith(STYLE_UID_PREFIX))
+          .map((p: any) => ({
+            id: p.id,
+            uid: p.uid,
+            fullName: p.full_name,
+            email: p.email,
+            phoneNumber: p.phone_number || '',
+            accountStatus: p.account_status || 'Active',
+            createdAt: p.created_at,
+            role: roleMap.get(p.uid) || 'customer',
+          }));
 
         setAllStyles(mappedStyles);
         setUsersList(mappedUsers);
@@ -313,16 +319,6 @@ export const AdminDashboardPage: React.FC = () => {
         });
         setUploadProgress(70);
 
-        // Also sync to Supabase Storage catalog manifest so styles work even if PostgREST schema cache is stale
-        const storageCatalogEntry = await appendStyleToSupabaseStorageCatalog({
-          title: uploadTitle.trim(),
-          description: uploadDescription.trim(),
-          category: uploadCategory,
-          imageUrl: uploaded.imageUrl,
-          storagePath: uploaded.storagePath,
-          isPublished: true,
-        });
-
         const { data: inserted, error: insErr } = await supabase
           .from('fashion_styles')
           .insert({
@@ -336,11 +332,23 @@ export const AdminDashboardPage: React.FC = () => {
           .select()
           .single();
 
-        if (insErr && !storageCatalogEntry) {
-          throw new Error(insErr.message);
+        let publishedTitle = inserted?.title;
+
+        if (insErr) {
+          const fallbackEntry = await appendStyleToSupabaseStorageCatalog({
+            title: uploadTitle.trim(),
+            description: uploadDescription.trim(),
+            category: uploadCategory,
+            imageUrl: uploaded.imageUrl,
+            storagePath: uploaded.storagePath,
+            isPublished: true,
+          });
+          if (!fallbackEntry) {
+            throw new Error(insErr.message);
+          }
+          publishedTitle = fallbackEntry.title;
         }
 
-        const publishedTitle = inserted?.title || storageCatalogEntry?.title || uploadTitle.trim();
         setUploadProgress(100);
         setUploadTitle('');
         setUploadDescription('');
