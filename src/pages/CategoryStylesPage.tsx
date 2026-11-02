@@ -5,7 +5,6 @@ import {
   FashionStyleItem,
   getGeneralWhatsAppUrl,
 } from '../constants/brand.ts';
-import { supabase, isSupabaseConfigured } from '../lib/supabase.ts';
 import { loadCatalogFromSupabaseStorage } from '../lib/supabaseStorageCatalog.ts';
 import { StyleCard } from '../components/StyleCard.tsx';
 import { ImageLightboxModal } from '../components/ImageLightboxModal.tsx';
@@ -34,84 +33,11 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
     setLoading(true);
     setError(null);
     try {
-      if (isSupabaseConfigured && supabase) {
-        const [{ data, error: sbError }, storageCatalog] = await Promise.all([
-          supabase
-            .from('fashion_styles')
-            .select('*')
-            .eq('category', category)
-            .eq('is_published', true)
-            .order('created_at', { ascending: false }),
-          loadCatalogFromSupabaseStorage(),
-        ]);
-
-        const mapped: FashionStyleItem[] = (data || []).map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          description: row.description,
-          category: row.category,
-          imageUrl: row.image_url,
-          storagePath: row.storage_path,
-          isPublished: row.is_published,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        }));
-
-        const filteredFallback = storageCatalog.filter(
-          (item) => item.category === category && item.isPublished
-        );
-
-        const existingKeys = new Set(mapped.map((s) => `${s.title}-${s.createdAt}`));
-        for (const item of filteredFallback) {
-          if (!existingKeys.has(`${item.title}-${item.createdAt}`)) {
-            mapped.push(item);
-          }
-        }
-
-        if (mapped.length > 0 || !sbError) {
-          setStyles(mapped);
-          return;
-        }
-
-
-        // If Supabase table is not yet in PostgREST schema cache, try API fallback or show empty state cleanly
-        if (
-          sbError &&
-          (sbError.message.includes('schema cache') ||
-            sbError.message.includes('does not exist') ||
-            sbError.code === 'PGRST205' ||
-            sbError.code === '42P01')
-        ) {
-          try {
-            const fallbackRes = await fetch(`/api/styles?category=${category}`);
-            if (fallbackRes.ok) {
-              const fallbackData = await fallbackRes.json();
-              setStyles(Array.isArray(fallbackData.styles) ? fallbackData.styles : []);
-              return;
-            }
-          } catch {
-            // Static host without /api/styles
-          }
-          setStyles([]);
-          return;
-        }
-
-        if (sbError) {
-          throw new Error(sbError.message);
-        }
-      }
-
-      const res = await fetch(`/api/styles?category=${category}`);
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        setStyles([]);
-        return;
-      }
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to load styles.');
-      }
-      setStyles(Array.isArray(data.styles) ? data.styles : []);
+      const storageCatalog = await loadCatalogFromSupabaseStorage();
+      const publishedForCategory = storageCatalog.filter(
+        (item) => item.category === category && item.isPublished
+      );
+      setStyles(publishedForCategory);
     } catch (err: any) {
       setError(err.message || 'Unable to load fashion styles right now.');
     } finally {

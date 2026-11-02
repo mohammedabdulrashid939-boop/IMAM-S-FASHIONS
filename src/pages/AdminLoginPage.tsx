@@ -5,7 +5,7 @@ import { LOGO_URL, BUSINESS_NAME, FOUNDER_NAME } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const AdminLoginPage: React.FC = () => {
-  const { role, loading, loginAdmin, signInWithGoogle } = useAuth();
+  const { role, loading, loginAdmin } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -13,26 +13,12 @@ export const AdminLoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasExistingAdmin, setHasExistingAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!loading && role === 'admin') {
       navigate('/admin/dashboard', { replace: true });
     }
   }, [loading, role, navigate]);
-
-  useEffect(() => {
-    fetch('/api/auth/admin-status')
-      .then((r) => r.json())
-      .then((data) => {
-        if (typeof data.hasAdmin === 'boolean') {
-          setHasExistingAdmin(data.hasAdmin);
-        }
-      })
-      .catch(() => {
-        setHasExistingAdmin(true);
-      });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,23 +29,6 @@ export const AdminLoginPage: React.FC = () => {
       navigate('/admin/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Invalid administrator credentials.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleGoogleAdmin = async () => {
-    setError(null);
-    setSubmitting(true);
-    try {
-      const assignedRole = await signInWithGoogle({ isAdminLoginAttempt: true });
-      if (assignedRole === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
-      } else {
-        setError('This account is not authorized for administrator access.');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Administrator sign-in failed.');
     } finally {
       setSubmitting(false);
     }
@@ -84,9 +53,7 @@ export const AdminLoginPage: React.FC = () => {
               {BUSINESS_NAME} Admin
             </h1>
             <p className="text-xs text-slate-500">
-              {hasExistingAdmin === false
-                ? 'First-time administrator setup: sign in with your administrator email and password to initialize the master admin account.'
-                : 'Restricted to authorized Imam’s Fashion administrators only.'}
+              Restricted to authorized Imam&apos;s Fashion administrators only.
             </p>
           </div>
 
@@ -143,27 +110,9 @@ export const AdminLoginPage: React.FC = () => {
               className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#39D353] text-white text-sm font-semibold hover:bg-[#2eb846] transition-colors shadow-sm disabled:opacity-60 cursor-pointer"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{hasExistingAdmin === false ? 'Initialize & Enter Dashboard' : 'Login to Dashboard'}</span>
+              <span>Login to Dashboard</span>
             </button>
           </form>
-
-          <div className="relative py-1">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-slate-400">Or verify via Google</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleGoogleAdmin}
-            disabled={submitting}
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold text-[#071B49] hover:bg-slate-50 transition-colors cursor-pointer"
-          >
-            <span>Sign In with Authorized Google Account</span>
-          </button>
 
           <div className="pt-2 text-center">
             <Link

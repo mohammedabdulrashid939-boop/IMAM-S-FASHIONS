@@ -5,7 +5,7 @@ import { LOGO_URL, BUSINESS_NAME } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const CustomerLoginPage: React.FC = () => {
-  const { profile, role, loginCustomer, signInWithGoogle, updateProfile, logout } = useAuth();
+  const { profile, role, loginCustomer, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -35,18 +35,6 @@ export const CustomerLoginPage: React.FC = () => {
       await loginCustomer(email, password);
     } catch (err: any) {
       setError(err.message || 'Sign in failed. Please check your credentials.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setError(null);
-    setSubmitting(true);
-    try {
-      await signInWithGoogle({ isAdminLoginAttempt: false });
-    } catch (err: any) {
-      setError(err.message || 'Google sign-in could not be completed.');
     } finally {
       setSubmitting(false);
     }
@@ -282,24 +270,6 @@ export const CustomerLoginPage: React.FC = () => {
           </button>
         </form>
 
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-3 text-slate-400">Or continue with</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={submitting}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-300 text-sm font-semibold text-[#071B49] hover:bg-slate-50 transition-colors cursor-pointer"
-        >
-          <span>Continue with Google</span>
-        </button>
-
         <div className="text-center text-xs text-slate-600 pt-2">
           <p>
             Don&apos;t have an account yet?{' '}
@@ -314,7 +284,7 @@ export const CustomerLoginPage: React.FC = () => {
 };
 
 export const CustomerRegisterPage: React.FC = () => {
-  const { registerCustomer, signInWithGoogle } = useAuth();
+  const { registerCustomer } = useAuth();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState('');
@@ -339,19 +309,6 @@ export const CustomerRegisterPage: React.FC = () => {
       navigate('/login');
     } catch (err: any) {
       setError(err.message || 'Registration failed.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleGoogleRegister = async () => {
-    setError(null);
-    setSubmitting(true);
-    try {
-      await signInWithGoogle({ isAdminLoginAttempt: false });
-      navigate('/login');
-    } catch (err: any) {
-      setError(err.message || 'Google sign-in failed.');
     } finally {
       setSubmitting(false);
     }
@@ -458,24 +415,6 @@ export const CustomerRegisterPage: React.FC = () => {
             <span>Create Account</span>
           </button>
         </form>
-
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-3 text-slate-400">Or register with</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleRegister}
-          disabled={submitting}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-300 text-sm font-semibold text-[#071B49] hover:bg-slate-50 transition-colors cursor-pointer"
-        >
-          <span>Continue with Google</span>
-        </button>
 
         <p className="text-center text-xs text-slate-600 pt-2">
           Already registered?{' '}

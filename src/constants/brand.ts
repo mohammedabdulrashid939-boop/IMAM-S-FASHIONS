@@ -72,7 +72,7 @@ export async function compressAndReadImageFile(
       img.onerror = () => reject(new Error('Selected file could not be decoded as an image.'));
       img.onload = () => {
         try {
-          const maxDim = 1400;
+          const maxDim = 1100;
           let { width, height } = img;
           if (width > maxDim || height > maxDim) {
             if (width > height) {
@@ -92,19 +92,21 @@ export async function compressAndReadImageFile(
             if (onProgress) onProgress(100);
             return resolve({
               dataUrl: rawDataUrl,
-              mimeType: fileType || 'image/jpeg',
+              mimeType: 'image/jpeg',
               fileName: file.name,
             });
           }
 
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          const outputMime = fileType === 'image/png' ? 'image/png' : 'image/webp';
-          const compressedDataUrl = canvas.toDataURL(outputMime, 0.86);
+          const outputMime = 'image/jpeg';
+          const compressedDataUrl = canvas.toDataURL(outputMime, 0.84);
           if (onProgress) onProgress(85);
           resolve({
             dataUrl: compressedDataUrl,
             mimeType: outputMime,
-            fileName: file.name,
+            fileName: file.name.replace(/\.[^.]+$/, '') + '.jpg',
           });
         } catch {
           if (onProgress) onProgress(100);
