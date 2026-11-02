@@ -36,35 +36,7 @@ async function syncSupabaseUserSession(
   const isFounder = cleanEmail === FOUNDER_EMAIL;
   const displayName =
     fallbackName.trim() || (isFounder ? FOUNDER_NAME : cleanEmail.split('@')[0]);
-  let resolvedRole: 'admin' | 'customer' = isFounder ? 'admin' : 'customer';
-
-  // Check public.profiles or public.user_roles for role if present
-  try {
-    const { data: idProfile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (idProfile?.role === 'admin') {
-      resolvedRole = 'admin';
-    }
-  } catch {
-    // Ignore
-  }
-
-  try {
-    const { data: roleRow } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('uid', userId)
-      .maybeSingle();
-    if (roleRow?.role === 'admin') {
-      resolvedRole = 'admin';
-    }
-  } catch {
-    // Ignore
-  }
+  const resolvedRole: 'admin' | 'customer' = isFounder ? 'admin' : 'customer';
 
   const syncedProfile = await syncUserProfileToSupabase({
     id: 1,
@@ -78,8 +50,11 @@ async function syncSupabaseUserSession(
   });
 
   return {
-    profile: syncedProfile,
-    role: syncedProfile.role || resolvedRole,
+    profile: {
+      ...syncedProfile,
+      role: resolvedRole,
+    },
+    role: resolvedRole,
   };
 }
 

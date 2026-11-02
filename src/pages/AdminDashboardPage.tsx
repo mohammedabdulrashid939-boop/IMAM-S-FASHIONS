@@ -123,12 +123,16 @@ export const AdminDashboardPage: React.FC = () => {
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
 
-  // Protect route
+  // Protect route: redirect logged-in customers to public home, unauthenticated visitors to private admin login
   useEffect(() => {
     if (!authLoading && role !== 'admin') {
-      navigate('/admin/login', { replace: true });
+      if (profile) {
+        navigate('/', { replace: true });
+      } else {
+        navigate('/admin/login', { replace: true });
+      }
     }
-  }, [authLoading, role, navigate]);
+  }, [authLoading, role, profile, navigate]);
 
   useEffect(() => {
     if (profile) {

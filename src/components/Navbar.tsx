@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { profile, role } = useAuth();
+  const { profile } = useAuth();
 
   const navLinks = [
     { label: 'Home', path: '/' },
@@ -61,26 +61,16 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* Zone 3: Primary Account / Admin Action */}
+        {/* Zone 3: Primary Customer Account Action */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
           {profile ? (
-            <>
-              {role === 'admin' && (
-                <Link
-                  to="/admin/dashboard"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#39D353] text-white text-sm font-semibold hover:bg-[#2eb846] transition-colors whitespace-nowrap shrink-0 shadow-xs"
-                >
-                  <span>Admin Dashboard</span>
-                </Link>
-              )}
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#071B49] text-white text-sm font-semibold hover:bg-[#0c296b] transition-colors whitespace-nowrap shrink-0"
-              >
-                <User className="w-4 h-4 text-[#39D353]" />
-                <span className="truncate max-w-[140px]">{profile.fullName.split(' ')[0]}</span>
-              </Link>
-            </>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#071B49] text-white text-sm font-semibold hover:bg-[#0c296b] transition-colors whitespace-nowrap shrink-0"
+            >
+              <User className="w-4 h-4 text-[#39D353]" />
+              <span className="truncate max-w-[140px]">{profile.fullName.split(' ')[0]}</span>
+            </Link>
           ) : (
             <Link
               to="/login"

@@ -5,7 +5,7 @@ import { LOGO_URL, BUSINESS_NAME, FOUNDER_NAME } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const AdminLoginPage: React.FC = () => {
-  const { role, loading, loginAdmin } = useAuth();
+  const { profile, role, loading, loginAdmin } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -15,10 +15,14 @@ export const AdminLoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && role === 'admin') {
-      navigate('/admin/dashboard', { replace: true });
+    if (!loading) {
+      if (role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (profile && role === 'customer') {
+        navigate('/', { replace: true });
+      }
     }
-  }, [loading, role, navigate]);
+  }, [loading, role, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

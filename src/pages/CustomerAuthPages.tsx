@@ -5,7 +5,7 @@ import { LOGO_URL, BUSINESS_NAME } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const CustomerLoginPage: React.FC = () => {
-  const { profile, role, loginCustomer, updateProfile, logout } = useAuth();
+  const { profile, loginCustomer, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -86,25 +86,6 @@ export const CustomerLoginPage: React.FC = () => {
               <span>Sign Out</span>
             </button>
           </div>
-
-          {role === 'admin' && (
-            <div className="p-5 rounded-2xl bg-[#071B49] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
-                  Administrator Access Verified
-                </p>
-                <p className="text-sm text-slate-200 mt-0.5">
-                  Manage fashion styles, upload new designs, and view registered users.
-                </p>
-              </div>
-              <Link
-                to="/admin/dashboard"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#39D353] text-white text-xs sm:text-sm font-semibold hover:bg-[#2eb846] transition-colors whitespace-nowrap shrink-0"
-              >
-                Open Admin &amp; Users Dashboard &rarr;
-              </Link>
-            </div>
-          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-slate-50 p-5 rounded-2xl border border-slate-200/60">
             <div className="flex items-center gap-3">
