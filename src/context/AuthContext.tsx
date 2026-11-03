@@ -49,12 +49,15 @@ async function syncSupabaseUserSession(
     role: resolvedRole,
   });
 
+  const finalRole: 'admin' | 'customer' =
+    syncedProfile.role === 'admin' || isFounder ? 'admin' : 'customer';
+
   return {
     profile: {
       ...syncedProfile,
-      role: resolvedRole,
+      role: finalRole,
     },
-    role: resolvedRole,
+    role: finalRole,
   };
 }
 

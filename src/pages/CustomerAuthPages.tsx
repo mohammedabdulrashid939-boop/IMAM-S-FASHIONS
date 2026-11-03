@@ -27,13 +27,21 @@ export const CustomerLoginPage: React.FC = () => {
     }
   }, [profile]);
 
+  const isAdminUser =
+    role === 'admin' ||
+    profile?.role === 'admin' ||
+    profile?.email?.trim().toLowerCase() === 'mohammedabdulrashid939@gmail.com';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
       await loginCustomer(email, password);
-      if (email.trim().toLowerCase() === 'mohammedabdulrashid939@gmail.com') {
+      if (
+        email.trim().toLowerCase() === 'mohammedabdulrashid939@gmail.com' ||
+        role === 'admin'
+      ) {
         navigate('/admin/dashboard', { replace: true });
       }
     } catch (err: any) {
@@ -72,7 +80,7 @@ export const CustomerLoginPage: React.FC = () => {
               />
               <div>
                 <span className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
-                  Customer Profile
+                  {isAdminUser ? 'Founder & Admin Profile' : 'Customer Profile'}
                 </span>
                 <h1 className="font-display text-3xl font-bold text-[#071B49]">
                   Welcome, {profile.fullName}
@@ -80,15 +88,46 @@ export const CustomerLoginPage: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => logout()}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer self-start"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2.5 self-start">
+              {isAdminUser && (
+                <Link
+                  to="/admin/dashboard"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#39D353] text-white text-xs font-semibold hover:bg-[#2eb846] transition-colors shadow-sm"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
+
+          {isAdminUser && (
+            <div className="p-5 rounded-2xl bg-[#071B49] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
+                  Administrator Access Active
+                </p>
+                <p className="text-sm text-slate-200">
+                  Your account has full administrator privileges to upload styles and manage customer accounts.
+                </p>
+              </div>
+              <Link
+                to="/admin/dashboard"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#39D353] text-white text-xs font-semibold hover:bg-[#2eb846] transition-colors shrink-0 shadow-sm"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Open Admin Dashboard</span>
+              </Link>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-slate-50 p-5 rounded-2xl border border-slate-200/60">
             <div className="flex items-center gap-3">

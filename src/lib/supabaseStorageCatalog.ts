@@ -570,26 +570,29 @@ export async function syncUserProfileToSupabase(
   userRecord: UserProfileRecord
 ): Promise<UserProfileRecord> {
   const cleanEmail = userRecord.email.trim().toLowerCase();
-  const isFounder = cleanEmail === FOUNDER_EMAIL || userRecord.role === 'admin';
-  const finalRole: 'admin' | 'customer' = isFounder ? 'admin' : 'customer';
-  const normalized: UserProfileRecord = {
-    ...userRecord,
-    email: cleanEmail,
-    role: finalRole,
-    accountStatus: userRecord.accountStatus || 'Active',
-  };
+  let isAdminRole = cleanEmail === FOUNDER_EMAIL || userRecord.role === 'admin';
 
-  // 1. Upsert into public.profiles(uid, ...) and public.user_roles(uid, role)
+  // 1. Check existing database role first so we never downgrade an admin to customer
   try {
-    const { data: existingProf } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('uid', normalized.uid)
-      .maybeSingle();
+    const [{ data: existingProf }, { data: existingRoleRow }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('uid', userRecord.uid).maybeSingle(),
+      supabase.from('user_roles').select('*').eq('uid', userRecord.uid).maybeSingle(),
+    ]);
 
-    if (existingProf?.account_status === 'Suspended' && !isFounder) {
-      normalized.accountStatus = 'Suspended';
+    if (existingProf?.role === 'admin' || existingRoleRow?.role === 'admin') {
+      isAdminRole = true;
     }
+
+    const finalRole: 'admin' | 'customer' = isAdminRole ? 'admin' : 'customer';
+    const normalized: UserProfileRecord = {
+      ...userRecord,
+      email: cleanEmail,
+      role: finalRole,
+      accountStatus:
+        existingProf?.account_status === 'Suspended' && !isAdminRole
+          ? 'Suspended'
+          : userRecord.accountStatus || 'Active',
+    };
 
     await supabase.from('profiles').upsert(
       {
@@ -610,17 +613,27 @@ export async function syncUserProfileToSupabase(
       },
       { onConflict: 'uid' }
     );
+
+    userRecord = normalized;
   } catch {
     // Fallback if profiles uses id instead of uid
     try {
       await supabase
         .from('profiles')
-        .update({ display_name: normalized.fullName })
-        .eq('id', normalized.uid);
+        .update({ display_name: userRecord.fullName })
+        .eq('id', userRecord.uid);
     } catch {
       // Ignore
     }
   }
+
+  const finalRole: 'admin' | 'customer' = isAdminRole ? 'admin' : 'customer';
+  const normalized: UserProfileRecord = {
+    ...userRecord,
+    email: cleanEmail,
+    role: finalRole,
+    accountStatus: userRecord.accountStatus || 'Active',
+  };
 
   // 2. Sync user metadata entry in 'product-images/imam-users/'
   try {
@@ -647,7 +660,7 @@ export async function syncUserProfileToSupabase(
       }
     }
 
-    if (existingStatus === 'Suspended' && !isFounder) {
+    if (existingStatus === 'Suspended' && !isAdminRole) {
       normalized.accountStatus = 'Suspended';
     }
 
