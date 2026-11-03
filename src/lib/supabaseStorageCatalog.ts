@@ -579,14 +579,47 @@ export async function syncUserProfileToSupabase(
     accountStatus: userRecord.accountStatus || 'Active',
   };
 
-  // 1. Update display_name in public.profiles if row exists for this user
+  // 1. Upsert into public.profiles(uid, ...) and public.user_roles(uid, role)
   try {
-    await supabase
+    const { data: existingProf } = await supabase
       .from('profiles')
-      .update({ display_name: normalized.fullName })
-      .eq('id', normalized.uid);
+      .select('*')
+      .eq('uid', normalized.uid)
+      .maybeSingle();
+
+    if (existingProf?.account_status === 'Suspended' && !isFounder) {
+      normalized.accountStatus = 'Suspended';
+    }
+
+    await supabase.from('profiles').upsert(
+      {
+        uid: normalized.uid,
+        full_name: normalized.fullName,
+        email: normalized.email,
+        phone_number: normalized.phoneNumber,
+        account_status: normalized.accountStatus,
+        role: finalRole,
+      },
+      { onConflict: 'uid' }
+    );
+
+    await supabase.from('user_roles').upsert(
+      {
+        uid: normalized.uid,
+        role: finalRole,
+      },
+      { onConflict: 'uid' }
+    );
   } catch {
-    // Ignore
+    // Fallback if profiles uses id instead of uid
+    try {
+      await supabase
+        .from('profiles')
+        .update({ display_name: normalized.fullName })
+        .eq('id', normalized.uid);
+    } catch {
+      // Ignore
+    }
   }
 
   // 2. Sync user metadata entry in 'product-images/imam-users/'
