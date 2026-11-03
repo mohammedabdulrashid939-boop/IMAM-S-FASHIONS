@@ -122,81 +122,93 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-stretch">
             {/* MEN'S FASHION CARD */}
-            <div className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
-              <div className="relative h-[480px] sm:h-[540px] w-full bg-slate-100 overflow-hidden">
-                <img
-                  src={MENS_COVER_URL}
-                  alt="Men's Fashion Styles — Navy-blue bespoke suit with gold buttons"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#071B49]/75 via-transparent to-transparent" />
-                <div className="absolute bottom-5 left-6 right-6 text-white">
-                  <span className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
-                    Bespoke Menswear
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6">
-                <div className="space-y-3">
-                  <h3 className="font-display text-3xl sm:text-4xl font-bold text-[#071B49]">
-                    Men&apos;s Fashion Styles
-                  </h3>
-                  <p className="text-base text-slate-600 leading-relaxed">
-                    Discover elegant men&apos;s fashion, classic suits, traditional outfits, and
-                    unique designs tailored to your style.
-                  </p>
+            <div className="group disco-card-wrapper flex flex-col">
+              <div className="disco-card-inner">
+                <div className="disco-image-frame rounded-t-[16px]">
+                  <div className="relative h-[480px] sm:h-[540px] w-full bg-slate-100 overflow-hidden rounded-t-[13px]">
+                    <img
+                      src={MENS_COVER_URL}
+                      alt="Men's Fashion Styles — Navy-blue bespoke suit with gold buttons"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#071B49]/75 via-transparent to-transparent" />
+                    <div className="absolute bottom-5 left-6 right-6 text-white">
+                      <span className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
+                        Bespoke Menswear
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <Link
-                    to="/men"
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#39D353] text-white text-base font-semibold hover:bg-[#2eb846] transition-colors shadow-sm whitespace-nowrap shrink-0"
-                  >
-                    <span>Explore Men&apos;s Styles</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
+                <div className="disco-led-strip shrink-0" aria-hidden="true" />
+
+                <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6 bg-white">
+                  <div className="space-y-3">
+                    <h3 className="font-display text-3xl sm:text-4xl font-bold text-[#071B49]">
+                      Men&apos;s Fashion Styles
+                    </h3>
+                    <p className="text-base text-slate-600 leading-relaxed">
+                      Discover elegant men&apos;s fashion, classic suits, traditional outfits, and
+                      unique designs tailored to your style.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Link
+                      to="/men"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#39D353] text-white text-base font-semibold hover:bg-[#2eb846] transition-colors shadow-sm whitespace-nowrap shrink-0"
+                    >
+                      <span>Explore Men&apos;s Styles</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* WOMEN'S FASHION CARD */}
-            <div className="group bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
-              <div className="relative h-[480px] sm:h-[540px] w-full bg-slate-100 overflow-hidden">
-                <img
-                  src={WOMENS_COVER_URL}
-                  alt="Women's Fashion Styles — Colorful African-print dress"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#071B49]/75 via-transparent to-transparent" />
-                <div className="absolute bottom-5 left-6 right-6 text-white">
-                  <span className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
-                    Bespoke Womenswear
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6">
-                <div className="space-y-3">
-                  <h3 className="font-display text-3xl sm:text-4xl font-bold text-[#071B49]">
-                    Women&apos;s Fashion Styles
-                  </h3>
-                  <p className="text-base text-slate-600 leading-relaxed">
-                    Explore beautiful African prints, elegant dresses, and stunning designs for
-                    every occasion.
-                  </p>
+            <div className="group disco-card-wrapper flex flex-col">
+              <div className="disco-card-inner">
+                <div className="disco-image-frame rounded-t-[16px]">
+                  <div className="relative h-[480px] sm:h-[540px] w-full bg-slate-100 overflow-hidden rounded-t-[13px]">
+                    <img
+                      src={WOMENS_COVER_URL}
+                      alt="Women's Fashion Styles — Colorful African-print dress"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#071B49]/75 via-transparent to-transparent" />
+                    <div className="absolute bottom-5 left-6 right-6 text-white">
+                      <span className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
+                        Bespoke Womenswear
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <Link
-                    to="/women"
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#39D353] text-white text-base font-semibold hover:bg-[#2eb846] transition-colors shadow-sm whitespace-nowrap shrink-0"
-                  >
-                    <span>Explore Women&apos;s Styles</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
+                <div className="disco-led-strip shrink-0" aria-hidden="true" />
+
+                <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6 bg-white">
+                  <div className="space-y-3">
+                    <h3 className="font-display text-3xl sm:text-4xl font-bold text-[#071B49]">
+                      Women&apos;s Fashion Styles
+                    </h3>
+                    <p className="text-base text-slate-600 leading-relaxed">
+                      Explore beautiful African prints, elegant dresses, and stunning designs for
+                      every occasion.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Link
+                      to="/women"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#39D353] text-white text-base font-semibold hover:bg-[#2eb846] transition-colors shadow-sm whitespace-nowrap shrink-0"
+                    >
+                      <span>Explore Women&apos;s Styles</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

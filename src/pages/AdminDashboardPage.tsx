@@ -905,14 +905,20 @@ export const AdminDashboardPage: React.FC = () => {
               {uploadPreview && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wider text-[#071B49]">
-                    5. Image Preview Before Publishing
+                    5. Image Preview Before Publishing (With Live Disco LED Border)
                   </p>
-                  <div className="relative w-56 aspect-[3/4] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-sm">
-                    <img
-                      src={uploadPreview}
-                      alt="Upload preview"
-                      className="w-full h-full object-cover object-top"
-                    />
+                  <div className="disco-card-wrapper w-60">
+                    <div className="disco-card-inner">
+                      <div className="disco-image-frame rounded-[16px]">
+                        <div className="relative aspect-[3/4] rounded-[13px] overflow-hidden bg-slate-100">
+                          <img
+                            src={uploadPreview}
+                            alt="Upload preview"
+                            className="w-full h-full object-cover object-top"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -989,67 +995,73 @@ export const AdminDashboardPage: React.FC = () => {
                 {managedStyles.map((style) => (
                   <div
                     key={style.id}
-                    className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col"
+                    className="disco-card-wrapper flex flex-col"
                   >
-                    <div className="relative aspect-[3/4] bg-slate-100">
-                      <img
-                        src={style.imageUrl}
-                        alt={style.title}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover object-top"
-                      />
-                      <div className="absolute top-3 left-3 bg-[#071B49]/85 backdrop-blur-xs text-white px-3 py-1 rounded-md text-xs font-medium">
-                        {style.isPublished ? 'Published' : 'Unpublished'}
-                      </div>
-                    </div>
-
-                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                      <div className="space-y-1.5">
-                        <h4 className="font-display text-xl font-bold text-[#071B49]">
-                          {style.title}
-                        </h4>
-                        <p className="text-xs text-slate-600 line-clamp-2">{style.description}</p>
-                        <p className="text-[11px] text-slate-400 font-mono-tabular truncate">
-                          Path: {style.storagePath}
-                        </p>
+                    <div className="disco-card-inner">
+                      <div className="disco-image-frame rounded-t-[16px]">
+                        <div className="relative aspect-[3/4] bg-slate-100 rounded-t-[13px] overflow-hidden">
+                          <img
+                            src={style.imageUrl}
+                            alt={style.title}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover object-top"
+                          />
+                          <div className="absolute top-3 left-3 bg-[#071B49]/85 backdrop-blur-xs text-white px-3 py-1 rounded-md text-xs font-medium">
+                            {style.isPublished ? 'Published' : 'Unpublished'}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(style)}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-[#071B49] hover:bg-slate-50 cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit</span>
-                        </button>
+                      <div className="disco-led-strip shrink-0" aria-hidden="true" />
 
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePublish(style)}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                        >
-                          {style.isPublished ? (
-                            <>
-                              <EyeOff className="w-3.5 h-3.5" />
-                              <span>Unpublish</span>
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="w-3.5 h-3.5 text-[#39D353]" />
-                              <span>Publish</span>
-                            </>
-                          )}
-                        </button>
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4 bg-white">
+                        <div className="space-y-1.5">
+                          <h4 className="font-display text-xl font-bold text-[#071B49]">
+                            {style.title}
+                          </h4>
+                          <p className="text-xs text-slate-600 line-clamp-2">{style.description}</p>
+                          <p className="text-[11px] text-slate-400 font-mono-tabular truncate">
+                            Path: {style.storagePath}
+                          </p>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setDeletingStyle(style)}
-                          aria-label={`Delete ${style.title}`}
-                          className="inline-flex items-center justify-center p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(style)}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-[#071B49] hover:bg-slate-50 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublish(style)}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                          >
+                            {style.isPublished ? (
+                              <>
+                                <EyeOff className="w-3.5 h-3.5" />
+                                <span>Unpublish</span>
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-3.5 h-3.5 text-[#39D353]" />
+                                <span>Publish</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeletingStyle(style)}
+                            aria-label={`Delete ${style.title}`}
+                            className="inline-flex items-center justify-center p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

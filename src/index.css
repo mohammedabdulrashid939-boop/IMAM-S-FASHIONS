@@ -23,3 +23,186 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* ==========================================================================
+   IMAM'S FASHION — ANIMATED 4-COLOR LED DISCO LIGHT BORDER EFFECT
+   Colors: Red (#ff1744), Yellow (#ffd600), Blue (#2979ff), Green (#00e676)
+   GPU-accelerated via transform: translate(-50%, -50%) rotate() for 60fps
+   performance across Android, iPhone, tablet, and desktop browsers.
+   ========================================================================== */
+
+@keyframes disco-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes disco-spin-reverse {
+  0% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+}
+
+@keyframes disco-led-pulse {
+  0%, 100% {
+    opacity: 0.88;
+    filter: saturate(1.15) brightness(1.05);
+  }
+  50% {
+    opacity: 1;
+    filter: saturate(1.35) brightness(1.2);
+  }
+}
+
+/* Outer Card Wrapper with Animated 4-Color LED Perimeter */
+.disco-card-wrapper {
+  position: relative;
+  border-radius: 1.25rem; /* 20px */
+  padding: 3.5px;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(135deg, #ff1744, #ffd600, #2979ff, #00e676);
+  box-shadow:
+    0 6px 22px -6px rgba(255, 23, 68, 0.22),
+    0 6px 22px -6px rgba(41, 121, 255, 0.22),
+    0 2px 10px -2px rgba(0, 230, 118, 0.18);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Rotating 4-Color Conic LED Beam */
+.disco-card-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220%;
+  height: 220%;
+  z-index: -2;
+  background: conic-gradient(
+    from 0deg,
+    #ff1744 0deg,
+    #ff5252 35deg,
+    #ffd600 75deg,
+    #ffea00 105deg,
+    #00e676 150deg,
+    #39d353 185deg,
+    #2979ff 235deg,
+    #00b0ff 275deg,
+    #ff1744 320deg,
+    #ffd600 345deg,
+    #ff1744 360deg
+  );
+  animation: disco-spin 4.2s linear infinite;
+  will-change: transform;
+}
+
+/* Secondary Counter-Rotating LED Sparkle Pattern for Disco Chasing Bulb Feel */
+.disco-card-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220%;
+  height: 220%;
+  z-index: -1;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.55) 0deg 4deg,
+    transparent 4deg 15deg
+  );
+  mix-blend-mode: overlay;
+  animation: disco-spin-reverse 6s linear infinite, disco-led-pulse 2.2s ease-in-out infinite;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* Subtle Desktop Hover Glow & Acceleration */
+@media (hover: hover) and (pointer: fine) {
+  .disco-card-wrapper:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 -4px 24px -2px rgba(255, 23, 68, 0.45),
+      4px 0 24px -2px rgba(255, 214, 0, 0.42),
+      0 8px 28px -2px rgba(41, 121, 255, 0.45),
+      -4px 0 24px -2px rgba(0, 230, 118, 0.45);
+  }
+
+  .disco-card-wrapper:hover::before {
+    animation-duration: 2.4s;
+    filter: brightness(1.15) saturate(1.25);
+  }
+}
+
+/* Inner Card Surface — Protects Image, Title & Description 100% */
+.disco-card-inner {
+  position: relative;
+  z-index: 1;
+  border-radius: calc(1.25rem - 3.5px);
+  background-color: #ffffff;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dedicated Animated LED Frame Around Every Uploaded Fashion Image */
+.disco-image-frame {
+  position: relative;
+  padding: 3px;
+  background: linear-gradient(90deg, #ff1744, #ffd600, #00e676, #2979ff);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.disco-image-frame::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  z-index: -1;
+  background: conic-gradient(
+    from 90deg,
+    #ff1744 0deg,
+    #ffd600 90deg,
+    #00e676 180deg,
+    #2979ff 270deg,
+    #ff1744 360deg
+  );
+  animation: disco-spin 3.6s linear infinite;
+  will-change: transform;
+}
+
+/* Corner LED Indicator Dots (Red, Yellow, Blue, Green) */
+.disco-led-strip {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    #ff1744 0%,
+    #ffd600 25%,
+    #00e676 50%,
+    #2979ff 75%,
+    #ff1744 100%
+  );
+  background-size: 200% 100%;
+  animation: disco-strip-flow 2.6s linear infinite;
+}
+
+@keyframes disco-strip-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
