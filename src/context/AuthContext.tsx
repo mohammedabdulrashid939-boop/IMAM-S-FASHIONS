@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.ts';
 import { syncUserProfileToSupabase } from '../lib/supabaseStorageCatalog.ts';
-import { UserProfileRecord, FOUNDER_NAME } from '../constants/brand.ts';
-
-const FOUNDER_EMAIL = 'mohammedabdulrashid939@gmail.com';
+import { UserProfileRecord, FOUNDER_NAME, isFounderEmail } from '../constants/brand.ts';
 
 interface AuthContextValue {
   profile: UserProfileRecord | null;
@@ -33,7 +31,7 @@ async function syncSupabaseUserSession(
   createdAt?: string
 ): Promise<{ profile: UserProfileRecord; role: 'admin' | 'customer' }> {
   const cleanEmail = email.trim().toLowerCase();
-  const isFounder = cleanEmail === FOUNDER_EMAIL;
+  const isFounder = isFounderEmail(cleanEmail);
   const displayName =
     fallbackName.trim() || (isFounder ? FOUNDER_NAME : cleanEmail.split('@')[0]);
   const resolvedRole: 'admin' | 'customer' = isFounder ? 'admin' : 'customer';
@@ -196,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // If founder account doesn't exist yet in Supabase Auth, initialize it on first login
-    if (error && cleanEmail === FOUNDER_EMAIL) {
+    if (error && isFounderEmail(cleanEmail)) {
       const signUpRes = await supabase.auth.signUp({
         email: cleanEmail,
         password,

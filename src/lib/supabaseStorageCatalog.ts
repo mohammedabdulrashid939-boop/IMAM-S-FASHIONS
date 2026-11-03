@@ -1,12 +1,12 @@
 import { supabase } from './supabase.ts';
-import { FashionStyleItem, UserProfileRecord, FOUNDER_NAME } from '../constants/brand.ts';
+import { FashionStyleItem, UserProfileRecord, FOUNDER_NAME, isFounderEmail } from '../constants/brand.ts';
 
 const PRODUCT_IMAGES_BUCKET = 'product-images';
 const FASHION_STYLES_BUCKET = 'fashion-styles';
 const LOCAL_STORAGE_KEY = 'imams_fashion_styles_catalog_v2';
 const LOCAL_USERS_KEY = 'imams_fashion_users_catalog_v2';
 export const STYLE_UID_PREFIX = 'fashion_style__';
-const FOUNDER_EMAIL = 'mohammedabdulrashid939@gmail.com';
+const FOUNDER_EMAIL = 'mohammedabdulrashid@gmail.com';
 
 export const SUPABASE_QUICK_FIX_SQL = `-- IMAM'S FASHION SUPABASE SCHEMA & RLS POLICIES
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -59,6 +59,32 @@ CREATE POLICY "Authenticated manage fashion_styles"
   TO authenticated
   USING (true)
   WITH CHECK (true);
+
+-- Grant Admin Role to Founder Accounts
+INSERT INTO public.profiles (id, uid, full_name, display_name, email, phone_number, account_status, role)
+SELECT
+  u.id,
+  u.id::text,
+  COALESCE(u.raw_user_meta_data->>'full_name', 'Mohammed Abdul Rashid'),
+  COALESCE(u.raw_user_meta_data->>'full_name', 'Mohammed Abdul Rashid'),
+  LOWER(u.email),
+  COALESCE(u.raw_user_meta_data->>'phone_number', '0245198198'),
+  'Active',
+  'admin'
+FROM auth.users u
+WHERE LOWER(u.email) IN ('mohammedabdulrashid@gmail.com', 'mohammedabdulrashid939@gmail.com')
+ON CONFLICT (id) DO UPDATE SET
+  uid = EXCLUDED.uid,
+  email = EXCLUDED.email,
+  role = 'admin',
+  account_status = 'Active',
+  updated_at = NOW();
+
+INSERT INTO public.user_roles (uid, role)
+SELECT u.id::text, 'admin'
+FROM auth.users u
+WHERE LOWER(u.email) IN ('mohammedabdulrashid@gmail.com', 'mohammedabdulrashid939@gmail.com')
+ON CONFLICT (uid) DO UPDATE SET role = 'admin';
 
 NOTIFY pgrst, 'reload schema';`;
 
@@ -570,7 +596,7 @@ export async function syncUserProfileToSupabase(
   userRecord: UserProfileRecord
 ): Promise<UserProfileRecord> {
   const cleanEmail = userRecord.email.trim().toLowerCase();
-  let isAdminRole = cleanEmail === FOUNDER_EMAIL || userRecord.role === 'admin';
+  let isAdminRole = isFounderEmail(cleanEmail) || userRecord.role === 'admin';
 
   // 1. Check existing database role first so we never downgrade an admin to customer
   try {
@@ -734,7 +760,7 @@ export async function loadUsersFromSupabase(
           phoneNumber: meta.ph || '',
           accountStatus: meta.s === 'Suspended' ? 'Suspended' : 'Active',
           createdAt: meta.c || f.created_at || new Date().toISOString(),
-          role: meta.r === 'admin' || meta.e === FOUNDER_EMAIL ? 'admin' : 'customer',
+          role: meta.r === 'admin' || isFounderEmail(meta.e) ? 'admin' : 'customer',
         });
       });
     }

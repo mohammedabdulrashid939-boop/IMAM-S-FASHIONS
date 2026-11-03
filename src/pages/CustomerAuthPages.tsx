@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, LogOut, CheckCircle2, User, Mail, Phone, Calendar, LayoutDashboard } from 'lucide-react';
-import { LOGO_URL, BUSINESS_NAME } from '../constants/brand.ts';
+import { LOGO_URL, BUSINESS_NAME, isFounderEmail } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const CustomerLoginPage: React.FC = () => {
@@ -30,7 +30,7 @@ export const CustomerLoginPage: React.FC = () => {
   const isAdminUser =
     role === 'admin' ||
     profile?.role === 'admin' ||
-    profile?.email?.trim().toLowerCase() === 'mohammedabdulrashid939@gmail.com';
+    isFounderEmail(profile?.email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +38,7 @@ export const CustomerLoginPage: React.FC = () => {
     setSubmitting(true);
     try {
       await loginCustomer(email, password);
-      if (
-        email.trim().toLowerCase() === 'mohammedabdulrashid939@gmail.com' ||
-        role === 'admin'
-      ) {
+      if (isFounderEmail(email) || role === 'admin') {
         navigate('/admin/dashboard', { replace: true });
       }
     } catch (err: any) {

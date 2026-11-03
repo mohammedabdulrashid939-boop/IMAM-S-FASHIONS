@@ -5,6 +5,16 @@ export const WOMENS_COVER_URL = '/assets/aistudio/luxury___ff2eab6e.jpg';
 
 export const BUSINESS_NAME = "Imam's Fashion";
 export const FOUNDER_NAME = 'Mohammed Abdul Rashid';
+export const FOUNDER_EMAILS = [
+  'mohammedabdulrashid@gmail.com',
+  'mohammedabdulrashid939@gmail.com',
+];
+
+export function isFounderEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return FOUNDER_EMAILS.includes(email.trim().toLowerCase());
+}
+
 export const LOCATION_TEXT = 'Accra Zongo Lane, opposite K-F-M, Ghana';
 export const LOCATION_SHORT = 'Accra Zongo Lane, opposite K-F-M';
 export const WHATSAPP_LOCAL = '0245198198';

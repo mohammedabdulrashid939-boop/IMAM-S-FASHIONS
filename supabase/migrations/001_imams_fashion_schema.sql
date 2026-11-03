@@ -116,4 +116,35 @@ CREATE POLICY "Authenticated manage fashion-styles objects"
   USING (bucket_id IN ('fashion-styles', 'product-images'))
   WITH CHECK (bucket_id IN ('fashion-styles', 'product-images'));
 
+-- 9. GRANT ADMIN PRIVILEGES TO FOUNDER ACCOUNTS
+INSERT INTO public.profiles (id, uid, full_name, display_name, email, phone_number, account_status, role)
+SELECT
+  u.id,
+  u.id::text,
+  COALESCE(u.raw_user_meta_data->>'full_name', 'Mohammed Abdul Rashid'),
+  COALESCE(u.raw_user_meta_data->>'full_name', 'Mohammed Abdul Rashid'),
+  LOWER(u.email),
+  COALESCE(u.raw_user_meta_data->>'phone_number', '0245198198'),
+  'Active',
+  'admin'
+FROM auth.users u
+WHERE LOWER(u.email) IN ('mohammedabdulrashid@gmail.com', 'mohammedabdulrashid939@gmail.com')
+ON CONFLICT (id) DO UPDATE SET
+  uid = EXCLUDED.uid,
+  email = EXCLUDED.email,
+  role = 'admin',
+  account_status = 'Active',
+  updated_at = NOW();
+
+INSERT INTO public.user_roles (uid, role)
+SELECT u.id::text, 'admin'
+FROM auth.users u
+WHERE LOWER(u.email) IN ('mohammedabdulrashid@gmail.com', 'mohammedabdulrashid939@gmail.com')
+ON CONFLICT (uid) DO UPDATE SET role = 'admin';
+
+UPDATE auth.users
+SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || '{"role": "admin"}'::jsonb,
+    raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'::jsonb
+WHERE LOWER(email) IN ('mohammedabdulrashid@gmail.com', 'mohammedabdulrashid939@gmail.com');
+
 NOTIFY pgrst, 'reload schema';
