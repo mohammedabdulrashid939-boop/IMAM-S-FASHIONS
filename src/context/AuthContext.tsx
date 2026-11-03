@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.ts';
 import { syncUserProfileToSupabase } from '../lib/supabaseStorageCatalog.ts';
-import { UserProfileRecord, FOUNDER_NAME, isFounderEmail } from '../constants/brand.ts';
+import { UserProfileRecord, FOUNDER_NAME, WHATSAPP_LOCAL, isFounderEmail } from '../constants/brand.ts';
 
 interface AuthContextValue {
   profile: UserProfileRecord | null;
@@ -45,7 +45,7 @@ async function syncSupabaseUserSession(
     uid: userId,
     fullName: displayName,
     email: cleanEmail,
-    phoneNumber: fallbackPhone || (isFounder ? '0245198198' : ''),
+    phoneNumber: fallbackPhone || (isFounder ? WHATSAPP_LOCAL : ''),
     accountStatus: 'Active',
     createdAt: createdAt || new Date().toISOString(),
     role: resolvedRole,
@@ -216,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           data: {
             full_name: fullName || FOUNDER_NAME,
-            phone_number: '0245198198',
+            phone_number: WHATSAPP_LOCAL,
           },
         },
       });
@@ -237,7 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data.user.id,
       data.user.email || cleanEmail,
       data.user.user_metadata?.full_name || fullName || FOUNDER_NAME,
-      data.user.user_metadata?.phone_number || '0245198198',
+      data.user.user_metadata?.phone_number || WHATSAPP_LOCAL,
       data.user.created_at
     );
 

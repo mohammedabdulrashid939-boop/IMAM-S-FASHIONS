@@ -26,6 +26,9 @@ import {
   LOGO_URL,
   BUSINESS_NAME,
   FOUNDER_NAME,
+  WHATSAPP_LOCAL,
+  WHATSAPP_INTL,
+  isFounderEmail,
   FashionStyleItem,
   UserProfileRecord,
   compressAndReadImageFile,
@@ -119,7 +122,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   // Settings state
   const [settingsName, setSettingsName] = useState(profile?.fullName || FOUNDER_NAME);
-  const [settingsPhone, setSettingsPhone] = useState(profile?.phoneNumber || '0245198198');
+  const [settingsPhone, setSettingsPhone] = useState(profile?.phoneNumber || WHATSAPP_LOCAL);
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
 
@@ -168,13 +171,13 @@ export const AdminDashboardPage: React.FC = () => {
     } finally {
       setLoadingData(false);
     }
-  }, [role, userSortOrder]);
+  }, [isAdminUser, userSortOrder]);
 
   useEffect(() => {
-    if (role === 'admin') {
+    if (isAdminUser) {
       loadDashboardData();
     }
-  }, [role, loadDashboardData]);
+  }, [isAdminUser, loadDashboardData]);
 
   // Handle selecting an image file on Upload Form
   const handleSelectUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -395,7 +398,7 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
-  if (authLoading || role !== 'admin') {
+  if (authLoading || !isAdminUser) {
     return (
       <div className="min-h-screen bg-[#071B49] flex items-center justify-center text-white">
         <div className="flex items-center gap-3">
@@ -1253,7 +1256,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <div className="pb-3 border-b border-slate-100">
                   <dt className="text-xs text-slate-400">WhatsApp Click-to-Chat</dt>
                   <dd className="font-mono-tabular font-semibold text-[#071B49]">
-                    https://wa.me/233245198198
+                    https://wa.me/{WHATSAPP_INTL}
                   </dd>
                 </div>
                 <div>

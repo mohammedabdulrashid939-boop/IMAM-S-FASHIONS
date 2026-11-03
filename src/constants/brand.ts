@@ -21,9 +21,9 @@ export function isFounderEmail(email?: string | null): boolean {
 
 export const LOCATION_TEXT = 'Accra Zongo Lane, opposite K-F-M, Ghana';
 export const LOCATION_SHORT = 'Accra Zongo Lane, opposite K-F-M';
-export const WHATSAPP_LOCAL = '0245198198';
-export const WHATSAPP_INTL = '233245198198';
-export const WHATSAPP_DISPLAY_INTL = '+233245198198';
+export const WHATSAPP_LOCAL = '0533916516';
+export const WHATSAPP_INTL = '233533916516';
+export const WHATSAPP_DISPLAY_INTL = '+233533916516';
 export const CURRENCY = 'GH₵';
 
 export function getStyleWhatsAppUrl(styleTitle: string): string {

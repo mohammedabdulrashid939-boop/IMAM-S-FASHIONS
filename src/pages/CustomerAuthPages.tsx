@@ -199,7 +199,7 @@ export const CustomerLoginPage: React.FC = () => {
                   type="tel"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder="e.g. 0245198198"
+                  placeholder="e.g. 0533916516"
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm text-[#071B49] focus:outline-none focus:border-[#071B49]"
                 />
               </div>
@@ -415,7 +415,7 @@ export const CustomerRegisterPage: React.FC = () => {
               required
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="e.g. 0245198198"
+              placeholder="e.g. 0533916516"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-[#071B49] focus:outline-none focus:border-[#071B49]"
             />
           </div>

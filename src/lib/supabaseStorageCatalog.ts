@@ -105,7 +105,7 @@ SELECT
   COALESCE(u.raw_user_meta_data->>'full_name', 'Mohammed Abdul Rashid'),
   COALESCE(u.raw_user_meta_data->>'full_name', 'Mohammed Abdul Rashid'),
   LOWER(u.email),
-  COALESCE(u.raw_user_meta_data->>'phone_number', '0245198198'),
+  COALESCE(u.raw_user_meta_data->>'phone_number', '0533916516'),
   'Active',
   'admin'
 FROM auth.users u
@@ -842,7 +842,7 @@ export async function loadUsersFromSupabase(
             uid,
             fullName: displayName || (isRowAdmin ? FOUNDER_NAME : `Customer #${idx + 1}`),
             email: p.email || (isRowAdmin ? FOUNDER_EMAIL : `${displayName || 'customer'}@imamsfashion.com`),
-            phoneNumber: p.phone_number || (isRowAdmin ? '0245198198' : ''),
+            phoneNumber: p.phone_number || (isRowAdmin ? '0533916516' : ''),
             accountStatus: p.account_status === 'Suspended' ? 'Suspended' : 'Active',
             createdAt: p.created_at || new Date().toISOString(),
             role: isRowAdmin ? 'admin' : 'customer',
