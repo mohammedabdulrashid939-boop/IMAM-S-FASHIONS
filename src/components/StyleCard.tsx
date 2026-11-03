@@ -9,7 +9,7 @@ interface StyleCardProps {
 
 export const StyleCard: React.FC<StyleCardProps> = ({ style, onPreview }) => {
   const [imgError, setImgError] = useState(false);
-  const whatsappLink = getStyleWhatsAppUrl(style.title);
+  const whatsappLink = getStyleWhatsAppUrl(style);
   const categoryLabel = style.category === 'men' ? "Men's Collection" : "Women's Collection";
 
   return (

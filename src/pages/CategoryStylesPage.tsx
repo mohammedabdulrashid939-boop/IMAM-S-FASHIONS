@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, ArrowLeft, RefreshCw, MessageCircle, Scissors } from 'lucide-react';
 import {
   FashionStyleItem,
@@ -19,6 +19,7 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [previewStyle, setPreviewStyle] = useState<FashionStyleItem | null>(null);
+  const [searchParams] = useSearchParams();
 
   const isMen = category === 'men';
   const pageTitle = isMen ? "Men's Fashion Styles" : "Women's Fashion Styles";
@@ -49,6 +50,16 @@ export const CategoryStylesPage: React.FC<CategoryStylesPageProps> = ({ category
     setSearchQuery('');
     fetchStyles();
   }, [fetchStyles]);
+
+  useEffect(() => {
+    const requestedStyleId = searchParams.get('style');
+    if (requestedStyleId && styles.length > 0) {
+      const found = styles.find((item) => String(item.id) === requestedStyleId);
+      if (found) {
+        setPreviewStyle(found);
+      }
+    }
+  }, [searchParams, styles]);
 
   const filteredStyles = styles.filter((item) => {
     if (!searchQuery.trim()) return true;

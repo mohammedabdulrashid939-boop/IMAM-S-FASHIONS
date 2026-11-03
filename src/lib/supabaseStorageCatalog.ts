@@ -410,12 +410,21 @@ export async function appendStyleToSupabaseStorageCatalog(
           finalImageUrl = pubData.publicUrl;
         }
       } else {
-        await supabase.storage
+        const { error: fallbackErr } = await supabase.storage
           .from(FASHION_STYLES_BUCKET)
           .upload(objectPath, blob, {
             contentType: 'image/jpeg',
             upsert: true,
           });
+        if (!fallbackErr) {
+          const { data: fallbackPubData } = supabase.storage
+            .from(FASHION_STYLES_BUCKET)
+            .getPublicUrl(objectPath);
+          if (fallbackPubData?.publicUrl) {
+            finalImageUrl = fallbackPubData.publicUrl;
+            finalStoragePath = `${FASHION_STYLES_BUCKET}/${objectPath}`;
+          }
+        }
       }
     }
   } catch {

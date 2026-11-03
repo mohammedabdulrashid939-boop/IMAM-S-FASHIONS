@@ -1,3 +1,5 @@
+import { activeSupabaseUrl } from '../lib/supabase.ts';
+
 export const LOGO_URL = '/assets/aistudio/Imam_s_Fashion_Crest_Logo_74895f44.png';
 export const MENS_COVER_URL =
   '/assets/aistudio/African_Suits_for_Men_Single_Breasted_Blazer_and__b8c7b0e9.jpg';
@@ -21,20 +23,101 @@ export function isFounderEmail(email?: string | null): boolean {
 
 export const LOCATION_TEXT = 'Accra Zongo Lane, opposite K-F-M, Ghana';
 export const LOCATION_SHORT = 'Accra Zongo Lane, opposite K-F-M';
-export const WHATSAPP_LOCAL = '0533916516';
-export const WHATSAPP_INTL = '233533916516';
-export const WHATSAPP_DISPLAY_INTL = '+233533916516';
+export const WHATSAPP_LOCAL = '0245198198';
+export const WHATSAPP_INTL = '233245198198';
+export const WHATSAPP_DISPLAY_INTL = '+233245198198';
 export const CURRENCY = 'GH₵';
 
-export function getStyleWhatsAppUrl(styleTitle: string): string {
-  const message = `Hello Imam's Fashion, I am interested in your ${styleTitle}. Please provide more information.`;
+export function getPublicStyleImageUrl(
+  styleOrImageUrl?:
+    | Pick<FashionStyleItem, 'imageUrl' | 'storagePath' | 'category' | 'id'>
+    | string,
+  storagePath?: string
+): string {
+  const rawUrl =
+    typeof styleOrImageUrl === 'string'
+      ? styleOrImageUrl.trim()
+      : (styleOrImageUrl?.imageUrl || '').trim();
+  const rawStoragePath =
+    typeof styleOrImageUrl === 'string'
+      ? (storagePath || '').trim()
+      : (styleOrImageUrl?.storagePath || storagePath || '').trim();
+
+  // 1. Direct public HTTP/HTTPS URL (e.g., Supabase Storage public URL)
+  if (/^https?:\/\//i.test(rawUrl)) {
+    return rawUrl;
+  }
+
+  // 2. Construct Supabase Storage public URL from storagePath if available
+  if (
+    rawStoragePath &&
+    (rawStoragePath.startsWith('product-images/') ||
+      rawStoragePath.startsWith('fashion-styles/'))
+  ) {
+    const cleanPath = rawStoragePath.replace(/^\/+/, '');
+    return `${activeSupabaseUrl}/storage/v1/object/public/${cleanPath}`;
+  }
+
+  // 3. Resolve root-relative asset URLs against current site origin
+  if (rawUrl.startsWith('/') && typeof window !== 'undefined') {
+    return `${window.location.origin}${rawUrl}`;
+  }
+
+  // 4. Fallback to direct style deep link if image is an inline data URL without storage path
+  if (
+    typeof styleOrImageUrl === 'object' &&
+    styleOrImageUrl !== null &&
+    'category' in styleOrImageUrl &&
+    styleOrImageUrl.category &&
+    typeof window !== 'undefined'
+  ) {
+    const catPath = styleOrImageUrl.category === 'women' ? '/women' : '/men';
+    const idParam = styleOrImageUrl.id ? `?style=${styleOrImageUrl.id}` : '';
+    return `${window.location.origin}${catPath}${idParam}`;
+  }
+
+  return typeof window !== 'undefined' ? window.location.origin : '';
+}
+
+export function getStyleWhatsAppUrl(
+  styleOrTitle:
+    | Pick<FashionStyleItem, 'title' | 'imageUrl' | 'storagePath' | 'category' | 'id'>
+    | string,
+  imageUrl?: string,
+  storagePath?: string
+): string {
+  const designName =
+    typeof styleOrTitle === 'string'
+      ? styleOrTitle.trim()
+      : (styleOrTitle.title || 'Fashion Design').trim();
+
+  const designImageUrl =
+    typeof styleOrTitle === 'string'
+      ? getPublicStyleImageUrl(imageUrl, storagePath)
+      : getPublicStyleImageUrl(styleOrTitle);
+
+  const lines = [
+    "Hello Imam's Fashion!",
+    '',
+    'I am interested in this fashion design:',
+    '',
+    `Design Name: ${designName}`,
+    '',
+    `Design Image: ${designImageUrl}`,
+    '',
+    'Please provide more information about this outfit.',
+    '',
+    'Thank you!',
+  ];
+
+  const message = lines.join('\n');
   return `https://wa.me/${WHATSAPP_INTL}?text=${encodeURIComponent(message)}`;
 }
 
 export function getGeneralWhatsAppUrl(customMessage?: string): string {
   const message =
     customMessage ||
-    "Hello Imam's Fashion, I would like to inquire about your fashion styles and tailoring services.";
+    "Hello Imam's Fashion! I would like to inquire about your fashion styles and tailoring services.";
   return `https://wa.me/${WHATSAPP_INTL}?text=${encodeURIComponent(message)}`;
 }
 
