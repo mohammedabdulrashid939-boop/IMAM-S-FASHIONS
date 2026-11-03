@@ -123,16 +123,21 @@ export const AdminDashboardPage: React.FC = () => {
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
 
+  const isAdminUser =
+    role === 'admin' ||
+    profile?.role === 'admin' ||
+    isFounderEmail(profile?.email);
+
   // Protect route: redirect logged-in customers to public home, unauthenticated visitors to private admin login
   useEffect(() => {
-    if (!authLoading && role !== 'admin') {
+    if (!authLoading && !isAdminUser) {
       if (profile) {
         navigate('/', { replace: true });
       } else {
         navigate('/admin/login', { replace: true });
       }
     }
-  }, [authLoading, role, profile, navigate]);
+  }, [authLoading, isAdminUser, profile, navigate]);
 
   useEffect(() => {
     if (profile) {
@@ -142,7 +147,7 @@ export const AdminDashboardPage: React.FC = () => {
   }, [profile]);
 
   const loadDashboardData = useCallback(async () => {
-    if (role !== 'admin') return;
+    if (!isAdminUser) return;
     setLoadingData(true);
     try {
       const [mappedStyles, mappedUsers] = await Promise.all([

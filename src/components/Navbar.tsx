@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, User, LayoutDashboard } from 'lucide-react';
-import { LOGO_URL, BUSINESS_NAME } from '../constants/brand.ts';
+import { LOGO_URL, BUSINESS_NAME, isFounderEmail } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { profile, role } = useAuth();
+
+  const isAdmin =
+    role === 'admin' ||
+    profile?.role === 'admin' ||
+    isFounderEmail(profile?.email);
 
   const navLinks = [
     { label: 'Home', path: '/' },
@@ -63,7 +68,7 @@ export const Navbar: React.FC = () => {
 
         {/* Zone 3: Primary Customer Account Action */}
         <div className="hidden md:flex items-center gap-2 lg:gap-2.5 shrink-0">
-          {role === 'admin' && (
+          {isAdmin && (
             <Link
               to="/admin/dashboard"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-md lg:rounded-lg bg-[#39D353] text-white text-xs lg:text-sm font-semibold shadow-sm hover:bg-[#2eb846] transition-colors whitespace-nowrap shrink-0"
@@ -74,7 +79,7 @@ export const Navbar: React.FC = () => {
           )}
           {profile ? (
             <Link
-              to="/login"
+              to={isAdmin ? '/login?view=profile' : '/login'}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-md lg:rounded-lg bg-[#071B49] text-white text-xs lg:text-sm font-semibold hover:bg-[#0c296b] transition-colors whitespace-nowrap shrink-0"
             >
               <User className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[#39D353]" />
@@ -93,7 +98,7 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Actions & Menu Button */}
         <div className="flex md:hidden items-center gap-1.5">
-          {role === 'admin' && (
+          {isAdmin && (
             <Link
               to="/admin/dashboard"
               className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#39D353] text-white text-[11px] font-semibold shadow-sm"
@@ -134,7 +139,7 @@ export const Navbar: React.FC = () => {
             );
           })}
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-            {role === 'admin' && (
+            {isAdmin && (
               <Link
                 to="/admin/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
@@ -146,7 +151,7 @@ export const Navbar: React.FC = () => {
             )}
             {profile ? (
               <Link
-                to="/login"
+                to={isAdmin ? '/login?view=profile' : '/login'}
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-[#071B49] text-white text-xs font-semibold"
               >

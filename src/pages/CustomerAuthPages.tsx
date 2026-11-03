@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, LogOut, CheckCircle2, User, Mail, Phone, Calendar, LayoutDashboard } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, Loader2, LogOut, CheckCircle2, User, Mail, Phone, Calendar, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { LOGO_URL, BUSINESS_NAME, isFounderEmail } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const CustomerLoginPage: React.FC = () => {
   const { profile, role, loginCustomer, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const viewProfileOnly = searchParams.get('view') === 'profile';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,25 +22,33 @@ export const CustomerLoginPage: React.FC = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSavedMsg, setProfileSavedMsg] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (profile) {
-      setEditName(profile.fullName);
-      setEditPhone(profile.phoneNumber);
-    }
-  }, [profile]);
-
   const isAdminUser =
     role === 'admin' ||
     profile?.role === 'admin' ||
     isFounderEmail(profile?.email);
+
+  React.useEffect(() => {
+    if (profile) {
+      setEditName(profile.fullName);
+      setEditPhone(profile.phoneNumber);
+      // Automatically take admin directly to Admin Dashboard when signing in on any phone/device
+      if (isAdminUser && !viewProfileOnly) {
+        navigate('/admin/dashboard', { replace: true });
+      }
+    }
+  }, [profile, isAdminUser, viewProfileOnly, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await loginCustomer(email, password);
-      if (isFounderEmail(email) || role === 'admin') {
+      const synced = await loginCustomer(email, password);
+      if (
+        synced.role === 'admin' ||
+        isFounderEmail(email) ||
+        isFounderEmail(synced.profile.email)
+      ) {
         navigate('/admin/dashboard', { replace: true });
       }
     } catch (err: any) {
@@ -290,13 +300,22 @@ export const CustomerLoginPage: React.FC = () => {
           </button>
         </form>
 
-        <div className="text-center text-xs text-slate-600 pt-2">
+        <div className="text-center text-xs text-slate-600 pt-2 space-y-2.5">
           <p>
             Don&apos;t have an account yet?{' '}
             <Link to="/register" className="font-semibold text-[#071B49] hover:text-[#39D353]">
               Create a Customer Account
             </Link>
           </p>
+          <div className="pt-2 border-t border-slate-100">
+            <Link
+              to="/admin/login"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#071B49] transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#39D353]" />
+              <span>Administrator Portal Login</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

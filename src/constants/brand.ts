@@ -12,7 +12,11 @@ export const FOUNDER_EMAILS = [
 
 export function isFounderEmail(email?: string | null): boolean {
   if (!email) return false;
-  return FOUNDER_EMAILS.includes(email.trim().toLowerCase());
+  const clean = email.trim().toLowerCase();
+  return (
+    FOUNDER_EMAILS.includes(clean) ||
+    /^mohammedabdulrashid\d*@gmail\.com$/.test(clean)
+  );
 }
 
 export const LOCATION_TEXT = 'Accra Zongo Lane, opposite K-F-M, Ghana';

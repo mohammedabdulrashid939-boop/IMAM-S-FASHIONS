@@ -45,6 +45,36 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fashion_styles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
+CREATE POLICY "Public read profiles"
+  ON public.profiles
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated upsert own or admin profiles" ON public.profiles;
+CREATE POLICY "Authenticated upsert own or admin profiles"
+  ON public.profiles
+  FOR ALL
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public read user_roles" ON public.user_roles;
+CREATE POLICY "Public read user_roles"
+  ON public.user_roles
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated manage user_roles" ON public.user_roles;
+CREATE POLICY "Authenticated manage user_roles"
+  ON public.user_roles
+  FOR ALL
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Public read published fashion_styles" ON public.fashion_styles;
 CREATE POLICY "Public read published fashion_styles"
   ON public.fashion_styles
@@ -61,6 +91,13 @@ CREATE POLICY "Authenticated manage fashion_styles"
   WITH CHECK (true);
 
 -- Grant Admin Role to Founder Accounts
+UPDATE auth.users
+SET
+  email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+  raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || '{"role": "admin", "full_name": "Mohammed Abdul Rashid"}'::jsonb,
+  raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'::jsonb
+WHERE LOWER(email) IN ('mohammedabdulrashid@gmail.com', 'mohammedabdulrashid939@gmail.com');
+
 INSERT INTO public.profiles (id, uid, full_name, display_name, email, phone_number, account_status, role)
 SELECT
   u.id,
@@ -600,12 +637,20 @@ export async function syncUserProfileToSupabase(
 
   // 1. Check existing database role first so we never downgrade an admin to customer
   try {
-    const [{ data: existingProf }, { data: existingRoleRow }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('uid', userRecord.uid).maybeSingle(),
-      supabase.from('user_roles').select('*').eq('uid', userRecord.uid).maybeSingle(),
-    ]);
+    const [{ data: existingProfByUid }, { data: existingProfById }, { data: existingRoleRow }] =
+      await Promise.all([
+        supabase.from('profiles').select('*').eq('uid', userRecord.uid).maybeSingle(),
+        supabase.from('profiles').select('*').eq('id', userRecord.uid).maybeSingle(),
+        supabase.from('user_roles').select('*').eq('uid', userRecord.uid).maybeSingle(),
+      ]);
 
-    if (existingProf?.role === 'admin' || existingRoleRow?.role === 'admin') {
+    const existingProf = existingProfByUid || existingProfById;
+
+    if (
+      existingProf?.role === 'admin' ||
+      existingRoleRow?.role === 'admin' ||
+      isFounderEmail(existingProf?.email)
+    ) {
       isAdminRole = true;
     }
 
@@ -622,14 +667,16 @@ export async function syncUserProfileToSupabase(
 
     await supabase.from('profiles').upsert(
       {
+        id: normalized.uid,
         uid: normalized.uid,
         full_name: normalized.fullName,
+        display_name: normalized.fullName,
         email: normalized.email,
         phone_number: normalized.phoneNumber,
         account_status: normalized.accountStatus,
         role: finalRole,
       },
-      { onConflict: 'uid' }
+      { onConflict: 'id' }
     );
 
     await supabase.from('user_roles').upsert(
@@ -642,24 +689,16 @@ export async function syncUserProfileToSupabase(
 
     userRecord = normalized;
   } catch {
-    // Fallback if profiles uses id instead of uid
+    // Fallback if profiles schema differs
     try {
       await supabase
         .from('profiles')
-        .update({ display_name: userRecord.fullName })
+        .update({ display_name: userRecord.fullName, role: isAdminRole ? 'admin' : 'customer' })
         .eq('id', userRecord.uid);
     } catch {
       // Ignore
     }
   }
-
-  const finalRole: 'admin' | 'customer' = isAdminRole ? 'admin' : 'customer';
-  const normalized: UserProfileRecord = {
-    ...userRecord,
-    email: cleanEmail,
-    role: finalRole,
-    accountStatus: userRecord.accountStatus || 'Active',
-  };
 
   // 2. Sync user metadata entry in 'product-images/imam-users/'
   try {
@@ -667,7 +706,7 @@ export async function syncUserProfileToSupabase(
       .from(PRODUCT_IMAGES_BUCKET)
       .list('imam-users', { limit: 200 });
 
-    const prefix = `usr_${normalized.uid}_`;
+    const prefix = `usr_${userRecord.uid}_`;
     const oldPaths: string[] = [];
     let existingStatus: 'Active' | 'Suspended' | null = null;
 
@@ -682,13 +721,23 @@ export async function syncUserProfileToSupabase(
           if (decoded?.s === 'Suspended') {
             existingStatus = 'Suspended';
           }
+          if (decoded?.r === 'admin' || isFounderEmail(decoded?.e)) {
+            isAdminRole = true;
+          }
         }
       }
     }
 
-    if (existingStatus === 'Suspended' && !isAdminRole) {
-      normalized.accountStatus = 'Suspended';
-    }
+    const finalRole: 'admin' | 'customer' = isAdminRole ? 'admin' : 'customer';
+    const normalized: UserProfileRecord = {
+      ...userRecord,
+      email: cleanEmail,
+      role: finalRole,
+      accountStatus:
+        existingStatus === 'Suspended' && !isAdminRole
+          ? 'Suspended'
+          : userRecord.accountStatus || 'Active',
+    };
 
     const encoded = encodeBase64Url(
       JSON.stringify({
@@ -721,13 +770,22 @@ export async function syncUserProfileToSupabase(
         }
       }
     }
-  } catch {
-    // Ignore
-  }
 
-  const localUsers = readLocalUsers().filter((u) => u.uid !== normalized.uid);
-  writeLocalUsers([normalized, ...localUsers]);
-  return normalized;
+    const localUsers = readLocalUsers().filter((u) => u.uid !== normalized.uid);
+    writeLocalUsers([normalized, ...localUsers]);
+    return normalized;
+  } catch {
+    const finalRole: 'admin' | 'customer' = isAdminRole ? 'admin' : 'customer';
+    const normalized: UserProfileRecord = {
+      ...userRecord,
+      email: cleanEmail,
+      role: finalRole,
+      accountStatus: userRecord.accountStatus || 'Active',
+    };
+    const localUsers = readLocalUsers().filter((u) => u.uid !== normalized.uid);
+    writeLocalUsers([normalized, ...localUsers]);
+    return normalized;
+  }
 }
 
 export async function loadUsersFromSupabase(

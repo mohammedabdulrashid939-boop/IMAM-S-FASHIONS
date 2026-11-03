@@ -8,7 +8,10 @@ interface AuthContextValue {
   role: 'admin' | 'customer' | null;
   token: string | null;
   loading: boolean;
-  loginCustomer: (email: string, password: string) => Promise<void>;
+  loginCustomer: (
+    email: string,
+    password: string
+  ) => Promise<{ profile: UserProfileRecord; role: 'admin' | 'customer' }>;
   registerCustomer: (input: {
     fullName: string;
     email: string;
@@ -28,10 +31,11 @@ async function syncSupabaseUserSession(
   email: string,
   fallbackName = '',
   fallbackPhone = '',
-  createdAt?: string
+  createdAt?: string,
+  metadataRole?: string
 ): Promise<{ profile: UserProfileRecord; role: 'admin' | 'customer' }> {
   const cleanEmail = email.trim().toLowerCase();
-  const isFounder = isFounderEmail(cleanEmail);
+  const isFounder = isFounderEmail(cleanEmail) || metadataRole === 'admin';
   const displayName =
     fallbackName.trim() || (isFounder ? FOUNDER_NAME : cleanEmail.split('@')[0]);
   const resolvedRole: 'admin' | 'customer' = isFounder ? 'admin' : 'customer';
@@ -84,12 +88,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user && isMounted) {
         try {
+          const metaRole =
+            session.user.user_metadata?.role || session.user.app_metadata?.role;
           const synced = await syncSupabaseUserSession(
             session.user.id,
             session.user.email || '',
             session.user.user_metadata?.full_name || '',
             session.user.user_metadata?.phone_number || '',
-            session.user.created_at
+            session.user.created_at,
+            metaRole
           );
           if (synced.profile.accountStatus === 'Suspended') {
             await supabase.auth.signOut();
@@ -108,12 +115,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user && isMounted) {
+        const metaRole =
+          session.user.user_metadata?.role || session.user.app_metadata?.role;
         const synced = await syncSupabaseUserSession(
           session.user.id,
           session.user.email || '',
           session.user.user_metadata?.full_name || '',
           session.user.user_metadata?.phone_number || '',
-          session.user.created_at
+          session.user.created_at,
+          metaRole
         );
         if (synced.profile.accountStatus === 'Suspended') {
           await supabase.auth.signOut();
@@ -133,25 +143,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [setSession]);
 
   const loginCustomer = async (email: string, password: string) => {
+    const cleanEmail = email.trim().toLowerCase();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       password,
     });
     if (error || !data.user || !data.session) {
       throw new Error(error?.message || 'Invalid email address or password.');
     }
+    const metaRole =
+      data.user.user_metadata?.role || data.user.app_metadata?.role;
     const synced = await syncSupabaseUserSession(
       data.user.id,
-      data.user.email || email,
+      data.user.email || cleanEmail,
       data.user.user_metadata?.full_name || '',
       data.user.user_metadata?.phone_number || '',
-      data.user.created_at
+      data.user.created_at,
+      metaRole
     );
     if (synced.profile.accountStatus === 'Suspended') {
       await supabase.auth.signOut();
       throw new Error('Your account has been suspended. Please contact support.');
     }
     setSession(data.session.access_token, synced.profile, synced.role);
+    return synced;
   };
 
   const registerCustomer = async (input: {
