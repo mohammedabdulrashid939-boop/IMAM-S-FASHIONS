@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, LogOut, CheckCircle2, User, Mail, Phone, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Loader2, LogOut, CheckCircle2, User, Mail, Phone, Calendar, LayoutDashboard } from 'lucide-react';
 import { LOGO_URL, BUSINESS_NAME } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const CustomerLoginPage: React.FC = () => {
-  const { profile, loginCustomer, updateProfile, logout } = useAuth();
+  const { profile, role, loginCustomer, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -33,6 +33,9 @@ export const CustomerLoginPage: React.FC = () => {
     setSubmitting(true);
     try {
       await loginCustomer(email, password);
+      if (email.trim().toLowerCase() === 'mohammedabdulrashid939@gmail.com') {
+        navigate('/admin/dashboard', { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || 'Sign in failed. Please check your credentials.');
     } finally {

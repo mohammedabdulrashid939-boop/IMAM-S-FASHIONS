@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, LayoutDashboard } from 'lucide-react';
 import { LOGO_URL, BUSINESS_NAME } from '../constants/brand.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
 
   const navLinks = [
     { label: 'Home', path: '/' },
@@ -63,6 +63,15 @@ export const Navbar: React.FC = () => {
 
         {/* Zone 3: Primary Customer Account Action */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
+          {role === 'admin' && (
+            <Link
+              to="/admin/dashboard"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#39D353] text-white text-sm font-semibold shadow-sm hover:bg-[#2eb846] transition-colors whitespace-nowrap shrink-0"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Admin Dashboard</span>
+            </Link>
+          )}
           {profile ? (
             <Link
               to="/login"
@@ -114,6 +123,16 @@ export const Navbar: React.FC = () => {
             );
           })}
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+            {role === 'admin' && (
+              <Link
+                to="/admin/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#39D353] text-white text-sm font-semibold shadow-sm"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Admin Dashboard</span>
+              </Link>
+            )}
             {profile ? (
               <Link
                 to="/login"
