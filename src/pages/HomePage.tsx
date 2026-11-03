@@ -122,29 +122,29 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-stretch">
             {/* MEN'S FASHION CARD */}
-            <div className="group disco-card-wrapper flex flex-col">
-              <div className="disco-card-inner">
+            <div className="group disco-card-wrapper flex flex-col h-full">
+              <div className="disco-card-inner flex-1 flex flex-col">
                 <div className="disco-image-frame rounded-t-[16px]">
-                  <div className="relative h-[480px] sm:h-[540px] w-full bg-slate-100 overflow-hidden rounded-t-[13px]">
+                  <Link
+                    to="/men"
+                    className="relative h-[380px] sm:h-[440px] lg:h-[480px] w-full bg-gradient-to-b from-slate-50 via-slate-100/90 to-slate-200/60 overflow-hidden rounded-t-[13px] flex items-center justify-center p-2 sm:p-4 block"
+                  >
                     <img
                       src={MENS_COVER_URL}
                       alt="Men's Fashion Styles — Navy-blue bespoke suit with gold buttons"
                       referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-contain object-center transition-transform duration-500 sm:group-hover:scale-[1.02]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#071B49]/75 via-transparent to-transparent" />
-                    <div className="absolute bottom-5 left-6 right-6 text-white">
-                      <span className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
-                        Bespoke Menswear
-                      </span>
-                    </div>
-                  </div>
+                  </Link>
                 </div>
 
                 <div className="disco-led-strip shrink-0" aria-hidden="true" />
 
-                <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6 bg-white">
-                  <div className="space-y-3">
+                <div className="p-6 sm:p-8 lg:p-10 flex-1 flex flex-col justify-between space-y-6 bg-white">
+                  <div className="space-y-2.5">
+                    <span className="inline-block text-xs uppercase tracking-widest text-[#39D353] font-semibold">
+                      Bespoke Menswear
+                    </span>
                     <h3 className="font-display text-3xl sm:text-4xl font-bold text-[#071B49]">
                       Men&apos;s Fashion Styles
                     </h3>
@@ -168,29 +168,29 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* WOMEN'S FASHION CARD */}
-            <div className="group disco-card-wrapper flex flex-col">
-              <div className="disco-card-inner">
+            <div className="group disco-card-wrapper flex flex-col h-full">
+              <div className="disco-card-inner flex-1 flex flex-col">
                 <div className="disco-image-frame rounded-t-[16px]">
-                  <div className="relative h-[480px] sm:h-[540px] w-full bg-slate-100 overflow-hidden rounded-t-[13px]">
+                  <Link
+                    to="/women"
+                    className="relative h-[380px] sm:h-[440px] lg:h-[480px] w-full bg-gradient-to-b from-slate-50 via-slate-100/90 to-slate-200/60 overflow-hidden rounded-t-[13px] flex items-center justify-center p-2 sm:p-4 block"
+                  >
                     <img
                       src={WOMENS_COVER_URL}
                       alt="Women's Fashion Styles — Colorful African-print dress"
                       referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-contain object-center transition-transform duration-500 sm:group-hover:scale-[1.02]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#071B49]/75 via-transparent to-transparent" />
-                    <div className="absolute bottom-5 left-6 right-6 text-white">
-                      <span className="text-xs uppercase tracking-widest text-[#39D353] font-semibold">
-                        Bespoke Womenswear
-                      </span>
-                    </div>
-                  </div>
+                  </Link>
                 </div>
 
                 <div className="disco-led-strip shrink-0" aria-hidden="true" />
 
-                <div className="p-8 sm:p-10 flex-1 flex flex-col justify-between space-y-6 bg-white">
-                  <div className="space-y-3">
+                <div className="p-6 sm:p-8 lg:p-10 flex-1 flex flex-col justify-between space-y-6 bg-white">
+                  <div className="space-y-2.5">
+                    <span className="inline-block text-xs uppercase tracking-widest text-[#39D353] font-semibold">
+                      Bespoke Womenswear
+                    </span>
                     <h3 className="font-display text-3xl sm:text-4xl font-bold text-[#071B49]">
                       Women&apos;s Fashion Styles
                     </h3>

@@ -43,12 +43,12 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({ style, o
           </button>
 
           {/* Full Image View */}
-          <div className="md:col-span-7 bg-slate-950 flex items-center justify-center max-h-[75vh]">
+          <div className="md:col-span-7 bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center p-3 sm:p-5 min-h-[320px] max-h-[65vh] md:max-h-[82vh]">
             <img
               src={style.imageUrl}
               alt={style.title}
               referrerPolicy="no-referrer"
-              className="max-h-[75vh] w-full object-contain"
+              className="max-h-[60vh] md:max-h-[76vh] w-full object-contain object-center"
             />
           </div>
 

@@ -759,7 +759,7 @@ export const AdminDashboardPage: React.FC = () => {
                               src={item.imageUrl}
                               alt={item.title}
                               referrerPolicy="no-referrer"
-                              className="w-12 h-14 rounded-lg object-cover bg-slate-100 shrink-0"
+                              className="w-12 h-14 rounded-lg object-contain bg-slate-100 p-0.5 shrink-0"
                             />
                             <div>
                               <p className="font-semibold text-[#071B49]">{item.title}</p>
@@ -907,14 +907,14 @@ export const AdminDashboardPage: React.FC = () => {
                   <p className="text-xs font-semibold uppercase tracking-wider text-[#071B49]">
                     5. Image Preview Before Publishing (With Live Disco LED Border)
                   </p>
-                  <div className="disco-card-wrapper w-60">
+                  <div className="disco-card-wrapper w-64 sm:w-72">
                     <div className="disco-card-inner">
                       <div className="disco-image-frame rounded-[16px]">
-                        <div className="relative aspect-[3/4] rounded-[13px] overflow-hidden bg-slate-100">
+                        <div className="relative h-[320px] sm:h-[360px] rounded-[13px] overflow-hidden bg-gradient-to-b from-slate-50 via-slate-100/90 to-slate-200/60 flex items-center justify-center p-2">
                           <img
                             src={uploadPreview}
                             alt="Upload preview"
-                            className="w-full h-full object-cover object-top"
+                            className="w-full h-full object-contain object-center"
                           />
                         </div>
                       </div>
@@ -999,12 +999,12 @@ export const AdminDashboardPage: React.FC = () => {
                   >
                     <div className="disco-card-inner">
                       <div className="disco-image-frame rounded-t-[16px]">
-                        <div className="relative aspect-[3/4] bg-slate-100 rounded-t-[13px] overflow-hidden">
+                        <div className="relative h-[340px] sm:h-[380px] bg-gradient-to-b from-slate-50 via-slate-100/90 to-slate-200/60 rounded-t-[13px] overflow-hidden flex items-center justify-center p-2">
                           <img
                             src={style.imageUrl}
                             alt={style.title}
                             referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover object-top"
+                            className="w-full h-full object-contain object-center"
                           />
                           <div className="absolute top-3 left-3 bg-[#071B49]/85 backdrop-blur-xs text-white px-3 py-1 rounded-md text-xs font-medium">
                             {style.isPublished ? 'Published' : 'Unpublished'}
